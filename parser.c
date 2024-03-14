@@ -31,6 +31,12 @@ void __attribute__((destructor)) parser_fini(void) {}
 
 struct parser_commands g_parser_commands[] = {
     {"core", parser_core_main, parser_core_usage},
+    {"zram", NULL, NULL},
+    {"shmem", NULL, NULL},
+    {"binder", NULL, NULL},
+    {"meminfo", NULL, NULL},
+    {"page_owner", NULL, NULL},
+    {"dmabuf", NULL, NULL},
     {"help", parser_help_main, NULL}
 };
 
@@ -40,7 +46,8 @@ void cmd_parser(void) {
     int count = sizeof(g_parser_commands)/sizeof(g_parser_commands[0]);
     for (int i = 0; i < count; ++i) {
         if (!strcmp(g_parser_commands[i].cmd, args[1])) {
-            g_parser_commands[i].main();
+            if (g_parser_commands[i].main)
+                g_parser_commands[i].main();
             break;
         }
     }
