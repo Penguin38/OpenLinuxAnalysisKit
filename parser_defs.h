@@ -29,6 +29,9 @@ struct parser_offset_table {
     long vm_area_struct_vm_file;
     long vm_area_struct_vm_pgoff;
     long task_struct_flags;
+    long task_struct_thread;
+    long thread_struct_sctlr_user;
+    long thread_struct_mte_ctrl;
 };
 
 struct parser_size_table {
@@ -44,6 +47,9 @@ struct parser_size_table {
     long vm_area_struct_vm_file;
     long vm_area_struct_vm_pgoff;
     long task_struct_flags;
+    long task_struct_thread;
+    long thread_struct_sctlr_user;
+    long thread_struct_mte_ctrl;
     long pt_regs;
 };
 
@@ -61,5 +67,8 @@ struct parser_commands {
 
 uint64_t align_down(uint64_t x, uint64_t n);
 uint64_t align_up(uint64_t x, uint64_t n);
+
+#define BIT(nr)         (1UL << (nr))
+#define BIT_ULL(nr)     (1ULL << (nr))
 
 #endif // PARSER_DEFS_H_

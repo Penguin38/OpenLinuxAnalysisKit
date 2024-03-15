@@ -64,16 +64,16 @@ void parser_x86_64_core_prstatus(struct core_data_t* core_data) {
     int i, cur;
     core_data->prstatus_cache = malloc(core_data->prnum * sizeof(Elf64_prstatus));
     memset(core_data->prstatus_cache, 0, core_data->prnum * sizeof(Elf64_prstatus));
-    Elf64_prstatus *elf_prstatus = core_data->prstatus_cache;
+    Elf64_prstatus *prstatus = core_data->prstatus_cache;
 
     int tgid = task_tgid(core_data->tc->task);
     struct task_context *tc = FIRST_CONTEXT();
     for (i = cur = 0; i < RUNNING_TASKS(); i++, tc++) {
         if (task_tgid(tc->task) == tgid) {
-            elf_prstatus[cur].pr_pid = tc->pid;
+            prstatus[cur].pr_pid = tc->pid;
 
             readmem(machdep->get_stacktop(tc->task) - PARSER_SIZE(pt_regs), KVADDR,
-                    &elf_prstatus[cur].pr_reg, sizeof(struct pt_regs), "gpr_get: user_pt_regs",
+                    &prstatus[cur].pr_reg, sizeof(struct pt_regs), "gpr_get: user_pt_regs",
                     FAULT_ON_ERROR);
             cur++;
         }

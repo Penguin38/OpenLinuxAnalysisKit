@@ -131,7 +131,7 @@ void parser_core_clean(struct core_data_t* core_data) {
 }
 
 void parser_core_usage(void) {
-    fprintf(fp, "Usage core -p <PID> [--file|-f <FILE_PATH>] [option]\n");
+    fprintf(fp, "Usage: core -p <PID> [--file|-f <FILE_PATH>] [option]\n");
     fprintf(fp, "   Option:\n");
     fprintf(fp, "       --zram: decompress zram page\n");
     fprintf(fp, "       --shmem: decompress shared memory on zram page\n");

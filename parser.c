@@ -95,6 +95,9 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_file, "vm_area_struct", "vm_file");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_pgoff, "vm_area_struct", "vm_pgoff");
     PARSER_MEMBER_OFFSET_INIT(task_struct_flags, "task_struct", "flags");
+    PARSER_MEMBER_OFFSET_INIT(task_struct_thread, "task_struct", "thread");
+    PARSER_MEMBER_OFFSET_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
+    PARSER_MEMBER_OFFSET_INIT(thread_struct_mte_ctrl, "thread_struct", "mte_ctrl");
 }
 
 static void parser_size_table_init(void) {
@@ -110,6 +113,10 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_file, "vm_area_struct", "vm_file");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_pgoff, "vm_area_struct", "vm_pgoff");
     PARSER_MEMBER_SIZE_INIT(task_struct_flags, "task_struct", "flags");
+    PARSER_MEMBER_SIZE_INIT(task_struct_thread, "task_struct", "thread");
+    PARSER_MEMBER_SIZE_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
+    PARSER_MEMBER_SIZE_INIT(thread_struct_mte_ctrl, "thread_struct", "mte_ctrl");
+
     PARSER_STRUCT_SIZE_INIT(pt_regs, "pt_regs");
 }
 
