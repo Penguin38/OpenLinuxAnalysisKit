@@ -1,6 +1,7 @@
 // Copyright (C) 2024-present, Guanyou.Chen. All rights reserved.
 
 #include "core.h"
+#include "zram/zram.h"
 #include "parser_defs.h"
 #include <elf.h>
 
@@ -231,6 +232,8 @@ void parser_write_core_load64(struct core_data_t* core_data) {
             if (paddr) {
                 if (page_exist) {
                     readmem(paddr, PHYSADDR, page_buf, sizeof(page_buf), "write load64", QUIET);
+                } else if (core_data->parse_zram) {
+                    parser_zram_read_buf(vaddr, page_buf, QUIET);
                 }
             }
             fwrite(page_buf, sizeof(page_buf), 1, core_data->fp);

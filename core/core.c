@@ -1,6 +1,7 @@
 // Copyright (C) 2024-present, Guanyou.Chen. All rights reserved.
 
 #include "core.h"
+#include "zram/zram.h"
 #include <unistd.h>
 #include <getopt.h>
 #include <string.h>
@@ -35,6 +36,7 @@ void parser_core_main(void) {
                 break;
             case 1:
                 core_data.parse_zram = 1;
+                parser_zram_init();
                 break;
             case 2:
                 core_data.parse_shmem = 1;
