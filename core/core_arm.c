@@ -2,6 +2,13 @@
 
 #include "core.h"
 
+struct parser_arm64_pt_regs {
+    uint64_t  regs[31];
+    uint64_t  sp;
+    uint64_t  pc;
+    uint64_t  pstate;
+};
+
 struct pt_regs {
     uint32_t  regs[13];
     uint32_t  sp;
@@ -36,7 +43,7 @@ void parser_arm_core_prstatus(struct core_data_t* core_data) {
     if (!core_data->prnum) return;
 
     int i, cur;
-    struct arm64_user_pt_regs regs;
+    struct parser_arm64_pt_regs regs;
     core_data->prstatus_cache = malloc(core_data->prnum * sizeof(Elf32_prstatus));
     memset(core_data->prstatus_cache, 0, core_data->prnum * sizeof(Elf32_prstatus));
     Elf32_prstatus *prstatus = core_data->prstatus_cache;
@@ -52,9 +59,9 @@ void parser_arm_core_prstatus(struct core_data_t* core_data) {
                         &prstatus[cur].pr_reg, sizeof(struct pt_regs), "gpr_get: user_pt_regs",
                         FAULT_ON_ERROR);
             } else {
-                memset(&regs, 0x0, sizeof(struct arm64_user_pt_regs));
+                memset(&regs, 0x0, sizeof(struct parser_arm64_pt_regs));
                 readmem(machdep->get_stacktop(tc->task) - PARSER_SIZE(pt_regs), KVADDR,
-                        &regs, sizeof(struct arm64_user_pt_regs), "gpr_get: user_pt_regs",
+                        &regs, sizeof(struct parser_arm64_pt_regs), "gpr_get: user_pt_regs",
                         FAULT_ON_ERROR);
 
                 prstatus[cur].pr_reg.regs[0] = regs.regs[0];
