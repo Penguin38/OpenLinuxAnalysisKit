@@ -32,6 +32,32 @@ struct parser_offset_table {
     long task_struct_thread;
     long thread_struct_sctlr_user;
     long thread_struct_mte_ctrl;
+    long swap_info_struct_bdev;
+    long swap_info_struct_swap_file;
+    long swap_info_struct_swap_vfsmnt;
+    long swap_info_struct_old_block_size;
+    long swap_info_struct_pages;
+    long block_device_bd_disk;
+    long gendisk_private_data;
+    long page_private;
+    long page_freelist;
+    long page_index;
+
+    // zram
+    long zram_disksize;
+    long zram_compressor;
+    long zram_table;
+    long zram_mem_pool;
+    long zram_comp;
+    long zram_table_entry_flags;
+    long zram_table_entry_handle;
+    long zram_table_entry_element;
+    long zcomp_name;
+
+    // zsmalloc
+    long zspool_size_class;
+    long size_class_size;
+    long zspage_huge;
 };
 
 struct parser_size_table {
@@ -51,6 +77,36 @@ struct parser_size_table {
     long thread_struct_sctlr_user;
     long thread_struct_mte_ctrl;
     long pt_regs;
+    long swap_info_struct;
+    long swap_info_struct_bdev;
+    long swap_info_struct_swap_file;
+    long swap_info_struct_swap_vfsmnt;
+    long swap_info_struct_old_block_size;
+    long swap_info_struct_pages;
+    long block_device_bd_disk;
+    long gendisk_private_data;
+    long page;
+    long page_private;
+    long page_freelist;
+    long page_index;
+
+    // zram
+    long zram;
+    long zram_disksize;
+    long zram_compressor;
+    long zram_table;
+    long zram_mem_pool;
+    long zram_comp;
+    long zram_table_entry;
+    long zram_table_entry_flags;
+    long zram_table_entry_handle;
+    long zram_table_entry_element;
+    long zcomp_name;
+
+    // zsmalloc
+    long zspool_size_class;
+    long size_class_size;
+    long zspage_huge;
 };
 
 extern struct parser_offset_table parser_offset_table;
@@ -67,8 +123,12 @@ struct parser_commands {
 
 uint64_t align_down(uint64_t x, uint64_t n);
 uint64_t align_up(uint64_t x, uint64_t n);
+void parser_convert_ascii(ulong value, char *ascii);
 
 #define BIT(nr)         (1UL << (nr))
 #define BIT_ULL(nr)     (1ULL << (nr))
+
+// crypto
+void *crypto_comp_get_decompress(const char* name);
 
 #endif // PARSER_DEFS_H_

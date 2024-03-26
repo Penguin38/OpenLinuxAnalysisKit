@@ -2,6 +2,7 @@
 
 #include "parser_defs.h"
 #include "core/core.h"
+#include "zram/zram.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -24,14 +25,17 @@ static struct command_table_entry command_table[] = {
 void __attribute__((constructor)) parser_init(void) {
     parser_offset_table_init();
     parser_size_table_init();
+    parser_zram_data_init();
     register_extension(command_table);
 }
 
-void __attribute__((destructor)) parser_fini(void) {}
+void __attribute__((destructor)) parser_fini(void) {
+    parser_zram_data_uninit();
+}
 
 struct parser_commands g_parser_commands[] = {
     {"core", parser_core_main, parser_core_usage},
-    {"zram", NULL, NULL},
+    {"zram", parser_zram_main, parser_zram_usage},
     {"shmem", NULL, NULL},
     {"binder", NULL, NULL},
     {"meminfo", NULL, NULL},
@@ -83,6 +87,7 @@ struct parser_offset_table parser_offset_table = {0};
 struct parser_size_table parser_size_table = {0};
 
 static void parser_offset_table_init(void) {
+    BZERO(&parser_offset_table, sizeof(parser_offset_table));
     PARSER_MEMBER_OFFSET_INIT(mm_struct_saved_auxv, "mm_struct", "saved_auxv");
     PARSER_MEMBER_OFFSET_INIT(mm_struct_task_size, "mm_struct", "task_size");
     PARSER_MEMBER_OFFSET_INIT(mm_struct_mmap, "mm_struct", "mmap");
@@ -98,9 +103,20 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_OFFSET_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
     PARSER_MEMBER_OFFSET_INIT(thread_struct_mte_ctrl, "thread_struct", "mte_ctrl");
+    PARSER_MEMBER_OFFSET_INIT(swap_info_struct_bdev, "swap_info_struct", "bdev");
+    PARSER_MEMBER_OFFSET_INIT(swap_info_struct_swap_file, "swap_info_struct", "swap_file");
+    PARSER_MEMBER_OFFSET_INIT(swap_info_struct_swap_vfsmnt, "swap_info_struct", "swap_vfsmnt");
+    PARSER_MEMBER_OFFSET_INIT(swap_info_struct_old_block_size, "swap_info_struct", "old_block_size");
+    PARSER_MEMBER_OFFSET_INIT(swap_info_struct_pages, "swap_info_struct", "pages");
+    PARSER_MEMBER_OFFSET_INIT(block_device_bd_disk, "block_device", "bd_disk");
+    PARSER_MEMBER_OFFSET_INIT(gendisk_private_data, "gendisk", "private_data");
+    PARSER_MEMBER_OFFSET_INIT(page_private, "page", "private");
+    PARSER_MEMBER_OFFSET_INIT(page_freelist, "page", "freelist");
+    PARSER_MEMBER_OFFSET_INIT(page_index, "page", "index");
 }
 
 static void parser_size_table_init(void) {
+    BZERO(&parser_size_table, sizeof(parser_size_table));
     PARSER_MEMBER_SIZE_INIT(mm_struct_saved_auxv, "mm_struct", "saved_auxv");
     PARSER_MEMBER_SIZE_INIT(mm_struct_task_size, "mm_struct", "task_size");
     PARSER_MEMBER_SIZE_INIT(mm_struct_mmap, "mm_struct", "mmap");
@@ -118,6 +134,18 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(thread_struct_mte_ctrl, "thread_struct", "mte_ctrl");
 
     PARSER_STRUCT_SIZE_INIT(pt_regs, "pt_regs");
+    PARSER_STRUCT_SIZE_INIT(swap_info_struct, "swap_info_struct");
+    PARSER_MEMBER_SIZE_INIT(swap_info_struct_bdev, "swap_info_struct", "bdev");
+    PARSER_MEMBER_SIZE_INIT(swap_info_struct_swap_file, "swap_info_struct", "swap_file");
+    PARSER_MEMBER_SIZE_INIT(swap_info_struct_swap_vfsmnt, "swap_info_struct", "swap_vfsmnt");
+    PARSER_MEMBER_SIZE_INIT(swap_info_struct_old_block_size, "swap_info_struct", "old_block_size");
+    PARSER_MEMBER_SIZE_INIT(swap_info_struct_pages, "swap_info_struct", "pages");
+    PARSER_MEMBER_SIZE_INIT(block_device_bd_disk, "block_device", "bd_disk");
+    PARSER_MEMBER_SIZE_INIT(gendisk_private_data, "gendisk", "private_data");
+    PARSER_STRUCT_SIZE_INIT(page, "page");
+    PARSER_MEMBER_SIZE_INIT(page_private, "page", "private");
+    PARSER_MEMBER_SIZE_INIT(page_freelist, "page", "freelist");
+    PARSER_MEMBER_SIZE_INIT(page_index, "page", "index");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {
@@ -126,4 +154,15 @@ uint64_t align_down(uint64_t x, uint64_t n) {
 
 uint64_t align_up(uint64_t x, uint64_t n) {
     return align_down(x + n - 1, n);
+}
+
+void parser_convert_ascii(ulong value, char *ascii) {
+    for (int j = 0; j < 8; j++) {
+        char byte = (value >> (8 * j)) & 0xFF;
+        if (byte > 0x20 && byte < 0x7F) {
+            ascii[j] = byte;
+        } else {
+            ascii[j] = '.';
+        }
+    }
 }
