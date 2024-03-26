@@ -98,7 +98,6 @@ out:
 int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* value, ulong error_handle) {
     unsigned char *src = NULL;
     unsigned char *zram_buf = NULL;
-    unsigned char *outbuf = NULL;
     unsigned char *entry_buf = NULL;
 
     ulong outsize;
@@ -157,13 +156,8 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     if (objsize == PAGESIZE()) {
         memcpy(value, src, outsize);
     } else {
-        outbuf = (unsigned char *)GETBUF(PAGESIZE());
-        BZERO(outbuf, PAGESIZE());
-        if (zram_data_cache[swap_index].decompress
-                && zram_data_cache[swap_index].decompress(src, outbuf, objsize, outsize)) {
-            memcpy(value, outbuf, outsize);
-        }
-        FREEBUF(outbuf);
+        if (zram_data_cache[swap_index].decompress)
+            zram_data_cache[swap_index].decompress(src, value, objsize, outsize);
     }
     FREEBUF(zram_buf);
     return 1;

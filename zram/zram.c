@@ -40,7 +40,7 @@ void parser_zram_main(void) {
             case 'r':
                 if (args[optind]) {
                     vaddr = htol(args[optind], FAULT_ON_ERROR, NULL);
-                    eaddr = vaddr;
+                    eaddr = vaddr + 0x10;
                 } break;
             case 'e':
                 if (args[optind]) {
@@ -66,22 +66,24 @@ void parser_zram_main(void) {
 
     unsigned char value[4096];
     memset(value, 0x0, 4096);
+    int zram_parse_ret = 0;
     char ascii1[9] = {'.', '.', '.', '.', '.', '.', '.', '.', '\0'};
     char ascii2[9] = {'.', '.', '.', '.', '.', '.', '.', '.', '\0'};
     ulong off = PAGEOFFSET(vaddr) / 0x8;
 
     if (dump_zram_off) {
-        parser_zram_read_page(swap_type, zram_off, value, FAULT_ON_ERROR);
+        zram_parse_ret = parser_zram_read_page(swap_type, zram_off, value, FAULT_ON_ERROR);
     } else {
-        parser_zram_read_buf(vaddr, value, FAULT_ON_ERROR);
+        zram_parse_ret = parser_zram_read_buf(vaddr, value, FAULT_ON_ERROR);
     }
 
     if (!filename) {
+        if (!zram_parse_ret) return;
         int count = (eaddr - vaddr) / 8;
         for (int index = 0; index < count; index += 2) {
             parser_convert_ascii(((ulong *)value)[index + off], ascii1);
             parser_convert_ascii(((ulong *)value)[index + 1 + off], ascii2);
-            fprintf(fp, "        %lx:  %016lx %016lx  %s%s\n", vaddr + (index + off) * 0x8,
+            fprintf(fp, "        %lx:  %016lx %016lx  %s%s\n", vaddr + index * 0x8,
                     ((ulong *)value)[index + off], ((ulong *)value)[index + 1 + off], ascii1, ascii2);
         }
     } else {
