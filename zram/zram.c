@@ -260,23 +260,16 @@ void parser_zram_data_uninit(void) {
 }
 
 int parser_zram_read_buf(ulong vaddr, unsigned char* value, ulong error_handle) {
-    struct task_context *tc;
     ulong paddr;
     ulong zram_offset;
     int swap_type;
 
-    tc = NULL;
-    if (!tc && !(tc = CURRENT_CONTEXT()))
-        return 0;
-
-    if (!IS_UVADDR(vaddr, tc))
-        return 0;
-
-    if (uvtop(tc, vaddr, &paddr, 0) || !paddr)
-        return 0;
+    struct task_context *tc = CURRENT_CONTEXT();
+    if (!tc) return 0;
+    if (!IS_UVADDR(vaddr, tc)) return 0;
+    if (uvtop(tc, vaddr, &paddr, 0) || !paddr) return 0;
 
     zram_offset = SWP_OFFSET(paddr);
     swap_type = SWP_TYPE(paddr);
-
     return parser_zram_read_page(swap_type, zram_offset, value, error_handle);
 }
