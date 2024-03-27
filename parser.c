@@ -3,6 +3,7 @@
 #include "parser_defs.h"
 #include "core/core.h"
 #include "zram/zram.h"
+#include "shmem/shmem.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -36,7 +37,7 @@ void __attribute__((destructor)) parser_fini(void) {
 struct parser_commands g_parser_commands[] = {
     {"core", parser_core_main, parser_core_usage},
     {"zram", parser_zram_main, parser_zram_usage},
-    {"shmem", NULL, NULL},
+    {"shmem", parser_shmem_main, parser_shmem_usage},
     {"binder", NULL, NULL},
     {"meminfo", NULL, NULL},
     {"page_owner", NULL, NULL},
@@ -113,6 +114,9 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(page_private, "page", "private");
     PARSER_MEMBER_OFFSET_INIT(page_freelist, "page", "freelist");
     PARSER_MEMBER_OFFSET_INIT(page_index, "page", "index");
+    PARSER_MEMBER_OFFSET_INIT(file_f_inode, "file", "f_inode");
+    PARSER_MEMBER_OFFSET_INIT(inode_i_mapping, "inode", "i_mapping");
+    PARSER_MEMBER_OFFSET_INIT(address_space_i_pages, "address_space", "i_pages");
 }
 
 static void parser_size_table_init(void) {
@@ -146,6 +150,9 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(page_private, "page", "private");
     PARSER_MEMBER_SIZE_INIT(page_freelist, "page", "freelist");
     PARSER_MEMBER_SIZE_INIT(page_index, "page", "index");
+    PARSER_MEMBER_SIZE_INIT(file_f_inode, "file", "f_inode");
+    PARSER_MEMBER_SIZE_INIT(inode_i_mapping, "inode", "i_mapping");
+    PARSER_MEMBER_SIZE_INIT(address_space_i_pages, "address_space", "i_pages");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {
@@ -165,4 +172,80 @@ void parser_convert_ascii(ulong value, char *ascii) {
             ascii[j] = '.';
         }
     }
+}
+
+int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache) {
+    int vma_count = 0;
+    ulong tmp, vma, vm_next, mm_mt, entry_num;
+    char *vma_buf;
+    struct list_pair *entry_list;
+    struct task_mem_usage task_mem_usage, *tm;
+
+    tm = &task_mem_usage;
+    get_task_mem_usage(tc->task, tm);
+
+    if (!PARSER_VALID_MEMBER(mm_struct_mmap)
+            && PARSER_VALID_MEMBER(mm_struct_mm_mt)) {
+        mm_mt = tm->mm_struct_addr + PARSER_OFFSET(mm_struct_mm_mt);
+        entry_num = do_maple_tree(mm_mt, MAPLE_TREE_COUNT, NULL);
+        if (entry_num) {
+            entry_list = (struct list_pair *)GETBUF(entry_num * sizeof(struct list_pair));
+            do_maple_tree(mm_mt, MAPLE_TREE_GATHER, entry_list);
+
+            int index;
+            for (index = 0; index < entry_num; index++) {
+                tmp = (ulong)entry_list[index].value;
+                if (!tmp) continue;
+                vma_count++;
+            }
+
+            if (!vma_count) {
+                error(INFO, "vma_area empty.\n");
+                return 0;
+            }
+
+            *vma_cache = (struct vma_cache_data *)malloc(vma_count * sizeof(struct vma_cache_data));
+            int idx = 0;
+            for (index = 0; index < entry_num; index++) {
+                tmp = (ulong)entry_list[index].value;
+                if (!tmp) continue;
+                vma_buf = fill_vma_cache(tmp);
+                (*vma_cache)[idx].vm_start = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_start));
+                (*vma_cache)[idx].vm_end = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_end));
+                (*vma_cache)[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
+                (*vma_cache)[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
+                (*vma_cache)[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
+                idx++;
+            }
+            FREEBUF(entry_list);
+        }
+    } else {
+        readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_mmap), KVADDR,
+                &vma, sizeof(void *), "mm_struct mmap", FAULT_ON_ERROR);
+
+        for (tmp = vma; tmp; tmp = vm_next) {
+            vma_count++;
+            vma_buf = fill_vma_cache(tmp);
+            vm_next = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_next));
+        }
+
+        if (!vma_count) {
+            error(INFO, "vma_area empty.\n");
+            return 0;
+        }
+
+        *vma_cache = (struct vma_cache_data *)malloc(vma_count * sizeof(struct vma_cache_data));
+        int idx = 0;
+        for (tmp = vma; tmp; tmp = vm_next) {
+            vma_buf = fill_vma_cache(tmp);
+            (*vma_cache)[idx].vm_start = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_start));
+            (*vma_cache)[idx].vm_end = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_end));
+            (*vma_cache)[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
+            (*vma_cache)[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
+            (*vma_cache)[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
+            idx++;
+            vm_next = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_next));
+        }
+    }
+    return vma_count;
 }

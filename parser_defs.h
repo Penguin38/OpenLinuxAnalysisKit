@@ -14,6 +14,16 @@
 #define PARSER_MEMBER_SIZE_INIT(X, Y, Z) (PARSER_ASSIGN_SIZE(X) = MEMBER_SIZE(Y, Z))
 #define PARSER_STRUCT_SIZE_INIT(X, Y) (PARSER_ASSIGN_SIZE(X) = STRUCT_SIZE(Y))
 
+#define VM_READ     0x00000001
+#define VM_WRITE    0x00000002
+#define VM_EXEC     0x00000004
+#define VM_SHARED   0x00000008
+
+#define VM_MAYREAD  0x00000010	/* limits for mprotect() etc */
+#define VM_MAYWRITE 0x00000020
+#define VM_MAYEXEC  0x00000040
+#define VM_MAYSHARE 0x00000080
+
 #define GENMASK(h, l) (((1ULL<<(h+1))-1)&(~((1ULL<<l)-1)))
 
 struct parser_offset_table {
@@ -42,6 +52,9 @@ struct parser_offset_table {
     long page_private;
     long page_freelist;
     long page_index;
+    long file_f_inode;
+    long inode_i_mapping;
+    long address_space_i_pages;
 
     // zram
     long zram_disksize;
@@ -89,6 +102,9 @@ struct parser_size_table {
     long page_private;
     long page_freelist;
     long page_index;
+    long file_f_inode;
+    long inode_i_mapping;
+    long address_space_i_pages;
 
     // zram
     long zram;
@@ -121,9 +137,18 @@ struct parser_commands {
     parser_usage usage;
 };
 
+struct vma_cache_data {
+    ulong vm_start;
+    ulong vm_end;
+    ulong vm_flags;
+    ulong vm_pgoff;
+    ulong vm_file;
+};
+
 uint64_t align_down(uint64_t x, uint64_t n);
 uint64_t align_up(uint64_t x, uint64_t n);
 void parser_convert_ascii(ulong value, char *ascii);
+int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache);
 
 #define BIT(nr)         (1UL << (nr))
 #define BIT_ULL(nr)     (1ULL << (nr))
