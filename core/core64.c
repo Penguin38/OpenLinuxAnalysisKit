@@ -2,84 +2,9 @@
 
 #include "core.h"
 #include "zram/zram.h"
+#include "shmem/shmem.h"
 #include "parser_defs.h"
 #include <elf.h>
-
-void parser_core_vmas64(struct core_data_t* core_data) {
-    ulong tmp, vma, vm_next, mm_mt, entry_num;
-    char *vma_buf;
-    struct list_pair *entry_list;
-    struct task_mem_usage task_mem_usage, *tm;
-
-    tm = &task_mem_usage;
-    get_task_mem_usage(core_data->tc->task, tm);
-
-    if (!PARSER_VALID_MEMBER(mm_struct_mmap)
-            && PARSER_VALID_MEMBER(mm_struct_mm_mt)) {
-        mm_mt = tm->mm_struct_addr + PARSER_OFFSET(mm_struct_mm_mt);
-        entry_num = do_maple_tree(mm_mt, MAPLE_TREE_COUNT, NULL);
-        if (entry_num) {
-            entry_list = (struct list_pair *)GETBUF(entry_num * sizeof(struct list_pair));
-            do_maple_tree(mm_mt, MAPLE_TREE_GATHER, entry_list);
-
-            int index;
-            for (index = 0; index < entry_num; index++) {
-                tmp = (ulong)entry_list[index].value;
-                if (!tmp) continue;
-                core_data->vma_count++;
-            }
-
-            if (!core_data->vma_count) {
-                error(INFO, "vma_area empty.\n");
-                return;
-            }
-
-            core_data->load_cache = malloc(core_data->vma_count * sizeof(Elf64_Phdr));
-            core_data->vma_cache = (struct vma_cache_data *)malloc(core_data->vma_count * sizeof(struct vma_cache_data));
-            int idx = 0;
-            for (index = 0; index < entry_num; index++) {
-                tmp = (ulong)entry_list[index].value;
-                if (!tmp) continue;
-                vma_buf = fill_vma_cache(tmp);
-                core_data->vma_cache[idx].vm_start = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_start));
-                core_data->vma_cache[idx].vm_end = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_end));
-                core_data->vma_cache[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
-                core_data->vma_cache[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
-                core_data->vma_cache[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
-                idx++;
-            }
-            FREEBUF(entry_list);
-        }
-    } else {
-        readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_mmap), KVADDR,
-                &vma, sizeof(void *), "mm_struct mmap", FAULT_ON_ERROR);
-
-        for (tmp = vma; tmp; tmp = vm_next) {
-            core_data->vma_count++;
-            vma_buf = fill_vma_cache(tmp);
-            vm_next = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_next));
-        }
-
-        if (!core_data->vma_count) {
-            error(INFO, "vma_area empty.\n");
-            return;
-        }
-
-        core_data->load_cache = malloc(core_data->vma_count * sizeof(Elf64_Phdr));
-        core_data->vma_cache = (struct vma_cache_data *)malloc(core_data->vma_count * sizeof(struct vma_cache_data));
-        int idx = 0;
-        for (tmp = vma; tmp; tmp = vm_next) {
-            vma_buf = fill_vma_cache(tmp);
-            core_data->vma_cache[idx].vm_start = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_start));
-            core_data->vma_cache[idx].vm_end = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_end));
-            core_data->vma_cache[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
-            core_data->vma_cache[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
-            core_data->vma_cache[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
-            idx++;
-            vm_next = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_next));
-        }
-    }
-}
 
 void parser_core_header64(struct core_data_t* core_data, Elf64_Ehdr *ehdr) {
     snprintf((char *)ehdr->e_ident, 5, ELFMAG);
@@ -217,10 +142,16 @@ void parser_write_core_load64(struct core_data_t* core_data) {
     physaddr_t paddr;
     uint64_t vaddr;
     int idx, i;
+    struct list_pair *shmem_page_list;
+    int shmem_page_count;
 
     for (idx = 0; idx < core_data->vma_count; ++idx) {
         Elf64_Phdr* phdr = &((Elf64_Phdr*)core_data->load_cache)[idx];
         if (!phdr->p_filesz) continue;
+
+        // shmem cache init
+        shmem_page_count = 0;
+        shmem_page_list = NULL;
 
         int count = phdr->p_memsz / sizeof(page_buf);
         for (i = 0; i < count; ++i) {
@@ -237,9 +168,21 @@ void parser_write_core_load64(struct core_data_t* core_data) {
                     ulong swap_type = SWP_TYPE(paddr);
                     parser_zram_read_page(swap_type, zram_offset, page_buf, QUIET);
                 }
+            } else {
+                if (core_data->parse_shmem) {
+                    if (!shmem_page_list) {
+                        shmem_page_count = parser_shmem_get_page_cache(&core_data->vma_cache[idx], &shmem_page_list, QUIET);
+                    }
+
+                    if (shmem_page_count) {
+                        parser_shmem_read_page_cache(vaddr, &core_data->vma_cache[idx], shmem_page_count,
+                                                     shmem_page_list, page_buf, QUIET);
+                    }
+                }
             }
             fwrite(page_buf, sizeof(page_buf), 1, core_data->fp);
         }
+        if (shmem_page_list) free(shmem_page_list);
     }
 }
 
@@ -264,7 +207,8 @@ void parser_core_dump64(struct core_data_t* core_data) {
         return;
     }
 
-    parser_core_vmas64(core_data);
+    core_data->vma_count = parser_vma_caches(core_data->tc, &core_data->vma_cache);
+    core_data->load_cache = malloc(core_data->vma_count * sizeof(Elf64_Phdr));
     core_data->phnum = core_data->vma_count + 1;
     parser_core_header64(core_data, &ehdr);
     parser_core_note64(core_data, &note);

@@ -10,14 +10,6 @@
 void parser_core_main(void);
 void parser_core_usage(void);
 
-struct vma_cache_data {
-    ulong vm_start;
-    ulong vm_end;
-    ulong vm_flags;
-    ulong vm_pgoff;
-    ulong vm_file;
-};
-
 struct core_data_t {
     // env
     struct task_context *tc;
@@ -75,10 +67,6 @@ typedef struct elf32_auxv {
 #define NOTE_CORE_NAME_SZ 5
 #define ELFLINUXMAGIC "LINUX"
 #define NOTE_LINUX_NAME_SZ 6
-
-#define VM_READ     0x00000001
-#define VM_WRITE    0x00000002
-#define VM_EXEC     0x00000004
 
 #ifndef NT_ARM_PAC_MASK
 #define NT_ARM_PAC_MASK 0x406

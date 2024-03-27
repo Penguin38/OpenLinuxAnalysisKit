@@ -40,6 +40,7 @@ void parser_core_main(void) {
                 break;
             case 2:
                 core_data.parse_shmem = 1;
+                parser_zram_init();
                 break;
         }
     }
