@@ -55,6 +55,35 @@ struct parser_offset_table {
     long file_f_inode;
     long inode_i_mapping;
     long address_space_i_pages;
+    long binder_proc_proc_node;
+    long binder_proc_pid;
+    long binder_proc_context;
+    long binder_proc_threads;
+    long binder_proc_todo;
+    long binder_context_name;
+    long binder_thread_rb_node;
+    long binder_thread_pid;
+    long binder_thread_looper;
+    long binder_thread_looper_need_return;
+    long binder_thread_tmp_ref;
+    long binder_thread_transaction_stack;
+    long binder_thread_proc;
+    long binder_transaction_from;
+    long binder_transaction_from_parent;
+    long binder_transaction_to_thread;
+    long binder_transaction_to_parent;
+    long binder_transaction_to_proc;
+    long binder_transaction_code;
+    long binder_transaction_flags;
+    long binder_transaction_priority;
+    long binder_transaction_debug_id;
+    long binder_transaction_need_reply;
+    long binder_transaction_buffer;
+    long binder_transaction_work;
+    long binder_node_debug_id;
+    long binder_node_work;
+    long binder_node_ptr;
+    long binder_node_cookie;
 
     // zram
     long zram_disksize;
@@ -105,6 +134,36 @@ struct parser_size_table {
     long file_f_inode;
     long inode_i_mapping;
     long address_space_i_pages;
+    long binder_proc;
+    long binder_proc_pid;
+    long binder_proc_context;
+    long binder_proc_threads;
+    long binder_proc_todo;
+    long binder_context_name;
+    long binder_thread;
+    long binder_thread_pid;
+    long binder_thread_looper;
+    long binder_thread_looper_need_return;
+    long binder_thread_tmp_ref;
+    long binder_thread_transaction_stack;
+    long binder_thread_proc;
+    long binder_transaction;
+    long binder_transaction_from;
+    long binder_transaction_from_parent;
+    long binder_transaction_to_thread;
+    long binder_transaction_to_parent;
+    long binder_transaction_to_proc;
+    long binder_transaction_code;
+    long binder_transaction_flags;
+    long binder_transaction_priority;
+    long binder_transaction_debug_id;
+    long binder_transaction_need_reply;
+    long binder_transaction_buffer;
+    long binder_transaction_work;
+    long binder_node_debug_id;
+    long binder_node_work;
+    long binder_node_ptr;
+    long binder_node_cookie;
 
     // zram
     long zram;
@@ -155,5 +214,8 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
 
 // crypto
 void *crypto_comp_get_decompress(const char* name);
+
+// sched
+const char* convert_sched(int i);
 
 #endif // PARSER_DEFS_H_

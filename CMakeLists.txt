@@ -22,5 +22,6 @@ add_library(linux-parser SHARED
             zram/zram_drv.c
             crypto.c
             lib/lzo/lzo1x_decompress_safe.c
-            shmem/shmem.c)
+            shmem/shmem.c
+            binder/binder.c)
 set_target_properties(linux-parser PROPERTIES PREFIX "")

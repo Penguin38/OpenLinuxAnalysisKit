@@ -4,6 +4,7 @@
 #include "core/core.h"
 #include "zram/zram.h"
 #include "shmem/shmem.h"
+#include "binder/binder.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -23,6 +24,16 @@ static struct command_table_entry command_table[] = {
     { NULL }
 };
 
+static const char* sched_name[] = {
+    "SCHED_NORMAL",
+    "SCHED_FIFO",
+    "SCHED_RR",
+    "SCHED_BATCH",
+    "SCHED_ISO",
+    "SCHED_IDLE",
+    "SCHED_DEADLINE",
+};
+
 void __attribute__((constructor)) parser_init(void) {
     parser_offset_table_init();
     parser_size_table_init();
@@ -38,7 +49,7 @@ struct parser_commands g_parser_commands[] = {
     {"core", parser_core_main, parser_core_usage},
     {"zram", parser_zram_main, parser_zram_usage},
     {"shmem", parser_shmem_main, parser_shmem_usage},
-    {"binder", NULL, NULL},
+    {"binder", parser_binder_main, parser_binder_usage},
     {"meminfo", NULL, NULL},
     {"page_owner", NULL, NULL},
     {"dmabuf", NULL, NULL},
@@ -117,6 +128,35 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(file_f_inode, "file", "f_inode");
     PARSER_MEMBER_OFFSET_INIT(inode_i_mapping, "inode", "i_mapping");
     PARSER_MEMBER_OFFSET_INIT(address_space_i_pages, "address_space", "i_pages");
+    PARSER_MEMBER_OFFSET_INIT(binder_proc_proc_node, "binder_proc", "proc_node");
+    PARSER_MEMBER_OFFSET_INIT(binder_proc_pid, "binder_proc", "pid");
+    PARSER_MEMBER_OFFSET_INIT(binder_proc_context, "binder_proc", "context");
+    PARSER_MEMBER_OFFSET_INIT(binder_proc_threads, "binder_proc", "threads");
+    PARSER_MEMBER_OFFSET_INIT(binder_proc_todo, "binder_proc", "todo");
+    PARSER_MEMBER_OFFSET_INIT(binder_context_name, "binder_context", "name");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_rb_node, "binder_thread", "rb_node");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_pid, "binder_thread", "pid");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_looper, "binder_thread", "looper");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_looper_need_return, "binder_thread", "looper_need_return");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_tmp_ref, "binder_thread", "tmp_ref");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_transaction_stack, "binder_thread", "transaction_stack");
+    PARSER_MEMBER_OFFSET_INIT(binder_thread_proc, "binder_thread", "proc");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_from, "binder_transaction", "from");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_from_parent, "binder_transaction", "from_parent");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_to_thread, "binder_transaction", "to_thread");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_to_parent, "binder_transaction", "to_parent");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_to_proc, "binder_transaction", "to_proc");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_code, "binder_transaction", "code");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_flags, "binder_transaction", "flags");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_priority, "binder_transaction", "priority");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_debug_id, "binder_transaction", "debug_id");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_need_reply, "binder_transaction", "need_reply");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_buffer, "binder_transaction", "buffer");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_work, "binder_transaction", "work");
+    PARSER_MEMBER_OFFSET_INIT(binder_node_debug_id, "binder_node", "debug_id");
+    PARSER_MEMBER_OFFSET_INIT(binder_node_work, "binder_node", "work");
+    PARSER_MEMBER_OFFSET_INIT(binder_node_ptr, "binder_node", "ptr");
+    PARSER_MEMBER_OFFSET_INIT(binder_node_cookie, "binder_node", "cookie");
 }
 
 static void parser_size_table_init(void) {
@@ -153,6 +193,36 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(file_f_inode, "file", "f_inode");
     PARSER_MEMBER_SIZE_INIT(inode_i_mapping, "inode", "i_mapping");
     PARSER_MEMBER_SIZE_INIT(address_space_i_pages, "address_space", "i_pages");
+    PARSER_STRUCT_SIZE_INIT(binder_proc, "binder_proc");
+    PARSER_MEMBER_SIZE_INIT(binder_proc_pid, "binder_proc", "pid");
+    PARSER_MEMBER_SIZE_INIT(binder_proc_context, "binder_proc", "context");
+    PARSER_MEMBER_SIZE_INIT(binder_proc_threads, "binder_proc", "threads");
+    PARSER_MEMBER_SIZE_INIT(binder_proc_todo, "binder_proc", "todo");
+    PARSER_MEMBER_SIZE_INIT(binder_context_name, "binder_context", "name");
+    PARSER_STRUCT_SIZE_INIT(binder_thread, "binder_thread");
+    PARSER_MEMBER_SIZE_INIT(binder_thread_pid, "binder_thread", "pid");
+    PARSER_MEMBER_SIZE_INIT(binder_thread_looper, "binder_thread", "looper");
+    PARSER_MEMBER_SIZE_INIT(binder_thread_looper_need_return, "binder_thread", "looper_need_return");
+    PARSER_MEMBER_SIZE_INIT(binder_thread_tmp_ref, "binder_thread", "tmp_ref");
+    PARSER_MEMBER_SIZE_INIT(binder_thread_transaction_stack, "binder_thread", "transaction_stack");
+    PARSER_MEMBER_SIZE_INIT(binder_thread_proc, "binder_thread", "proc");
+    PARSER_STRUCT_SIZE_INIT(binder_transaction, "binder_transaction");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_from, "binder_transaction", "from");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_from_parent, "binder_transaction", "from_parent");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_to_thread, "binder_transaction", "to_thread");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_to_parent, "binder_transaction", "to_parent");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_to_proc, "binder_transaction", "to_proc");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_code, "binder_transaction", "code");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_flags, "binder_transaction", "flags");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_priority, "binder_transaction", "priority");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_debug_id, "binder_transaction", "debug_id");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_need_reply, "binder_transaction", "need_reply");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_buffer, "binder_transaction", "buffer");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_work, "binder_transaction", "work");
+    PARSER_MEMBER_SIZE_INIT(binder_node_debug_id, "binder_node", "debug_id");
+    PARSER_MEMBER_SIZE_INIT(binder_node_work, "binder_node", "work");
+    PARSER_MEMBER_SIZE_INIT(binder_node_ptr, "binder_node", "ptr");
+    PARSER_MEMBER_SIZE_INIT(binder_node_cookie, "binder_node", "cookie");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {
@@ -172,6 +242,10 @@ void parser_convert_ascii(ulong value, char *ascii) {
             ascii[j] = '.';
         }
     }
+}
+
+const char* convert_sched(int i) {
+    return sched_name[i];
 }
 
 int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache) {
