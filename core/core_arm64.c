@@ -107,13 +107,12 @@ void parser_write_arm64_core_pac(struct core_data_t* core_data, int pid) {
     fwrite(magic, sizeof(magic), 1, core_data->fp);
 
     struct user_pac_mask uregs;
-    uint64_t mask = GENMASK(54, 39); // default
-    ulong vabits_actual_ptr = symbol_value("vabits_actual");
-    ulong vabits_actual;
-    if (vabits_actual_ptr) {
-        readmem(vabits_actual_ptr, KVADDR, &vabits_actual, sizeof(ulong), "vabits_actual", FAULT_ON_ERROR);
-        mask = GENMASK(54, vabits_actual);
-    }
+#ifdef ARM64
+    ulong vabits_actual = machdep->machspec->VA_BITS_ACTUAL;
+#else
+    ulong vabits_actual = 39;
+#endif
+    uint64_t mask = GENMASK(54, vabits_actual); // default
     uregs.data_mask = mask;
     uregs.insn_mask = mask;
     fwrite(&uregs, sizeof(struct user_pac_mask), 1, core_data->fp);
