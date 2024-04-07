@@ -10,11 +10,15 @@
 void parser_core_main(void);
 void parser_core_usage(void);
 
+#define FILTER_NON_READ_VMA (1 << 0)
+#define FILTER_SANITIZER_SHADOW_VMA (1 << 1)
+
 struct core_data_t {
     // env
     struct task_context *tc;
     int pid;
     char* file;
+    int filter_flags;
     char parse_zram;
     char parse_shmem;
 
@@ -38,9 +42,13 @@ struct core_data_t {
     void (*parser_core_prstatus)(struct core_data_t* core_data);
     void (*parser_write_core_prstatus)(struct core_data_t* core_data);
     void (*clean)(struct core_data_t* core_data);
+    void (*fill_vma_name)(struct core_data_t* core_data);
+    int (*filter_vma)(struct core_data_t* core_data, int index);
 };
 
 void parser_core_clean(struct core_data_t* core_data);
+void parser_core_fill_vma_name(struct core_data_t* core_data);
+int parser_core_filter_vma(struct core_data_t* core_data, int index);
 void parser_core_dump64(struct core_data_t* core_data);
 void parser_core_dump32(struct core_data_t* core_data);
 
@@ -62,6 +70,18 @@ typedef struct elf32_auxv {
     uint64_t a_type;
     uint64_t a_val;
 } Elf32_auxv;
+
+typedef struct elf64_ntfile{
+    uint64_t start;
+    uint64_t end;
+    uint64_t fileofs;
+} Elf64_ntfile;
+
+typedef struct elf32_ntfile{
+    uint32_t start;
+    uint32_t end;
+    uint32_t fileofs;
+} Elf32_ntfile;
 
 #define ELFCOREMAGIC "CORE"
 #define NOTE_CORE_NAME_SZ 5

@@ -40,6 +40,7 @@ void parser_write_core_note64(struct core_data_t* core_data, Elf64_Phdr *note) {
     note->p_filesz += (core_data->prstatus_sizeof + sizeof(Elf64_Nhdr) + 8) * core_data->prnum;
     note->p_filesz += sizeof(Elf64_auxv) * core_data->auxvnum + sizeof(Elf64_Nhdr) + 8;
     note->p_filesz += core_data->extra_note_filesz;
+    note->p_filesz += sizeof(Elf64_ntfile) * core_data->vma_count + sizeof(Elf64_Nhdr) + 8 + 2 * 8 + core_data->fileslen;
     fwrite(note, sizeof(Elf64_Phdr), 1, core_data->fp);
 }
 
@@ -85,10 +86,10 @@ void parser_core_load_vma64(struct core_data_t* core_data, int index) {
     if (core_data->vma_cache[index].vm_flags & VM_EXEC)
         phdr->p_flags |= PF_X;
 
-    if ((phdr->p_flags) & PF_R)
-        phdr->p_filesz = phdr->p_memsz;
-
     phdr->p_align = PAGESIZE();
+
+    if (!core_data->filter_vma(core_data, index))
+        phdr->p_filesz = phdr->p_memsz;
 }
 
 void parser_write_core_program_headers64(struct core_data_t* core_data, Elf64_Phdr *note) {
@@ -125,6 +126,45 @@ void parser_write_core_auxv64(struct core_data_t* core_data) {
     int index = 0;
     while (index < core_data->auxvnum) {
         fwrite((char *)core_data->auxv_cache + index * sizeof(Elf64_auxv), sizeof(Elf64_auxv), 1, core_data->fp);
+        index++;
+    }
+}
+
+void parser_write_core_file64(struct core_data_t* core_data, Elf64_Phdr *note) {
+    Elf64_Nhdr nhdr;
+    nhdr.n_namesz = NOTE_CORE_NAME_SZ;
+    nhdr.n_descsz = sizeof(Elf64_ntfile) * core_data->vma_count + 2 * 8 + core_data->fileslen;
+    nhdr.n_type = NT_FILE;
+
+    char magic[8];
+    memset(magic, 0, sizeof(magic));
+    snprintf(magic, NOTE_CORE_NAME_SZ, ELFCOREMAGIC);
+
+    fwrite(&nhdr, sizeof(Elf64_Nhdr), 1, core_data->fp);
+    fwrite(magic, sizeof(magic), 1, core_data->fp);
+
+    uint64_t number = core_data->vma_count;
+    fwrite(&number, 8, 1, core_data->fp);
+    uint64_t page_size = PAGESIZE();
+    fwrite(&page_size, 8, 1, core_data->fp);
+
+    int index = 0;
+    while(index < core_data->vma_count) {
+        Elf64_ntfile ntfile;
+        ntfile.start = core_data->vma_cache[index].vm_start;
+        ntfile.end = core_data->vma_cache[index].vm_end;
+        ntfile.fileofs = 0x0;
+        if (core_data->vma_cache[index].vm_file)
+            ntfile.fileofs = core_data->vma_cache[index].vm_pgoff;
+        fwrite(&ntfile, sizeof(Elf64_ntfile), 1, core_data->fp);
+        index++;
+    }
+
+    index = 0;
+    while(index < core_data->vma_count) {
+        fwrite(core_data->vma_cache[index].buf,
+               strlen(core_data->vma_cache[index].buf) + 1,
+               1, core_data->fp);
         index++;
     }
 }
@@ -210,6 +250,7 @@ void parser_core_dump64(struct core_data_t* core_data) {
     core_data->vma_count = parser_vma_caches(core_data->tc, &core_data->vma_cache);
     core_data->load_cache = malloc(core_data->vma_count * sizeof(Elf64_Phdr));
     core_data->phnum = core_data->vma_count + 1;
+    core_data->fill_vma_name(core_data);
     parser_core_header64(core_data, &ehdr);
     parser_core_note64(core_data, &note);
     parser_core_prstatus64(core_data);
@@ -220,6 +261,7 @@ void parser_core_dump64(struct core_data_t* core_data) {
     parser_write_core_program_headers64(core_data, &note);
     core_data->parser_write_core_prstatus(core_data);
     parser_write_core_auxv64(core_data);
+    parser_write_core_file64(core_data, &note);
     parser_core_note_align64(core_data, &note);
     parser_write_core_load64(core_data);
 

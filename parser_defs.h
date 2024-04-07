@@ -38,6 +38,7 @@ struct parser_offset_table {
     long vm_area_struct_vm_flags;
     long vm_area_struct_vm_file;
     long vm_area_struct_vm_pgoff;
+    long vm_area_struct_anon_name;
     long task_struct_flags;
     long task_struct_thread;
     long thread_struct_sctlr_user;
@@ -53,6 +54,7 @@ struct parser_offset_table {
     long page_freelist;
     long page_index;
     long file_f_inode;
+    long anon_vma_name_name;
     long inode_i_mapping;
     long address_space_i_pages;
     long binder_proc_proc_node;
@@ -114,6 +116,7 @@ struct parser_size_table {
     long vm_area_struct_vm_flags;
     long vm_area_struct_vm_file;
     long vm_area_struct_vm_pgoff;
+    long vm_area_struct_anon_name;
     long task_struct_flags;
     long task_struct_thread;
     long thread_struct_sctlr_user;
@@ -132,6 +135,7 @@ struct parser_size_table {
     long page_freelist;
     long page_index;
     long file_f_inode;
+    long anon_vma_name_name;
     long inode_i_mapping;
     long address_space_i_pages;
     long binder_proc;
@@ -202,6 +206,8 @@ struct vma_cache_data {
     ulong vm_flags;
     ulong vm_pgoff;
     ulong vm_file;
+    ulong anon_name;
+    char  buf[BUFSIZE];
 };
 
 uint64_t align_down(uint64_t x, uint64_t n);

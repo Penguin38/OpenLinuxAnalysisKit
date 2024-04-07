@@ -111,6 +111,7 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_flags, "vm_area_struct", "vm_flags");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_file, "vm_area_struct", "vm_file");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_pgoff, "vm_area_struct", "vm_pgoff");
+    PARSER_MEMBER_OFFSET_INIT(vm_area_struct_anon_name, "vm_area_struct", "anon_name");
     PARSER_MEMBER_OFFSET_INIT(task_struct_flags, "task_struct", "flags");
     PARSER_MEMBER_OFFSET_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_OFFSET_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
@@ -126,6 +127,7 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(page_freelist, "page", "freelist");
     PARSER_MEMBER_OFFSET_INIT(page_index, "page", "index");
     PARSER_MEMBER_OFFSET_INIT(file_f_inode, "file", "f_inode");
+    PARSER_MEMBER_OFFSET_INIT(anon_vma_name_name, "anon_vma_name", "name");
     PARSER_MEMBER_OFFSET_INIT(inode_i_mapping, "inode", "i_mapping");
     PARSER_MEMBER_OFFSET_INIT(address_space_i_pages, "address_space", "i_pages");
     PARSER_MEMBER_OFFSET_INIT(binder_proc_proc_node, "binder_proc", "proc_node");
@@ -172,6 +174,7 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_flags, "vm_area_struct", "vm_flags");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_file, "vm_area_struct", "vm_file");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_pgoff, "vm_area_struct", "vm_pgoff");
+    PARSER_MEMBER_SIZE_INIT(vm_area_struct_anon_name, "vm_area_struct", "anon_name");
     PARSER_MEMBER_SIZE_INIT(task_struct_flags, "task_struct", "flags");
     PARSER_MEMBER_SIZE_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_SIZE_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
@@ -191,6 +194,7 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(page_freelist, "page", "freelist");
     PARSER_MEMBER_SIZE_INIT(page_index, "page", "index");
     PARSER_MEMBER_SIZE_INIT(file_f_inode, "file", "f_inode");
+    PARSER_MEMBER_SIZE_INIT(anon_vma_name_name, "anon_vma_name", "name");
     PARSER_MEMBER_SIZE_INIT(inode_i_mapping, "inode", "i_mapping");
     PARSER_MEMBER_SIZE_INIT(address_space_i_pages, "address_space", "i_pages");
     PARSER_STRUCT_SIZE_INIT(binder_proc, "binder_proc");
@@ -279,6 +283,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
             }
 
             *vma_cache = (struct vma_cache_data *)malloc(vma_count * sizeof(struct vma_cache_data));
+            BZERO(*vma_cache, vma_count * sizeof(struct vma_cache_data));
             int idx = 0;
             for (index = 0; index < entry_num; index++) {
                 tmp = (ulong)entry_list[index].value;
@@ -289,6 +294,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
                 (*vma_cache)[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
                 (*vma_cache)[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
                 (*vma_cache)[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
+                (*vma_cache)[idx].anon_name = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_anon_name));
                 idx++;
             }
             FREEBUF(entry_list);
@@ -309,6 +315,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
         }
 
         *vma_cache = (struct vma_cache_data *)malloc(vma_count * sizeof(struct vma_cache_data));
+        BZERO(*vma_cache, vma_count * sizeof(struct vma_cache_data));
         int idx = 0;
         for (tmp = vma; tmp; tmp = vm_next) {
             vma_buf = fill_vma_cache(tmp);
@@ -317,6 +324,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
             (*vma_cache)[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
             (*vma_cache)[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
             (*vma_cache)[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
+            (*vma_cache)[idx].anon_name = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_anon_name));
             idx++;
             vm_next = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_next));
         }

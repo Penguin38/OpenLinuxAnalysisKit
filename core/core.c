@@ -17,22 +17,26 @@ void parser_core_main(void) {
     int option_index = 0;
     optind = 0; // reset
     static struct option long_options[] = {
-        {"pid",   required_argument, 0, 'p'},
-        {"file",  required_argument, 0, 'f'},
-        {"zram",  no_argument,       0,  1 },
-        {"shmem", no_argument,       0,  2 },
-        {0,       0,                 0,  0 }
+        {"pid",         required_argument, 0, 'p'},
+        {"output",      required_argument, 0, 'o'},
+        {"zram",        no_argument,       0,  1 },
+        {"shmem",       no_argument,       0,  2 },
+        {"filter",      required_argument, 0, 'f'},
+        {0,             0,                 0,  0 }
     };
 
     core_data.pid = CURRENT_PID();
-    while ((opt = getopt_long(argcnt - 1, &args[1], "p:f:012",
+    while ((opt = getopt_long(argcnt - 1, &args[1], "p:o:f:012",
                 long_options, &option_index)) != -1) {
         switch (opt) {
             case 'p':
                 if (args[optind]) core_data.pid = atoi(args[optind]);
                 break;
-            case 'f':
+            case 'o':
                 if (args[optind]) core_data.file = args[optind];
+                break;
+            case 'f':
+                if (args[optind]) core_data.filter_flags = atoi(args[optind]);
                 break;
             case 1:
                 core_data.parse_zram = 1;
@@ -122,6 +126,8 @@ void parser_core_main(void) {
         }
     }
     core_data.clean = parser_core_clean;
+    core_data.fill_vma_name = parser_core_fill_vma_name;
+    core_data.filter_vma = parser_core_filter_vma;
     core_data.parser_core_dump(&core_data);
 }
 
@@ -133,9 +139,62 @@ void parser_core_clean(struct core_data_t* core_data) {
     if (core_data->load_cache) free(core_data->load_cache);
 }
 
+void parser_core_fill_vma_name(struct core_data_t* core_data) {
+    char *file_buf;
+    char anon[BUFSIZE];
+    ulong dentry, vfsmnt;
+
+    for (int index = 0; index < core_data->vma_count; ++index) {
+        file_buf = NULL;
+        BZERO(anon, BUFSIZE);
+        dentry = vfsmnt = 0;
+
+        if (core_data->vma_cache[index].vm_file) {
+            file_buf = fill_file_cache(core_data->vma_cache[index].vm_file);
+            dentry = ULONG(file_buf + OFFSET(file_f_dentry));
+
+            if (dentry) {
+                if (VALID_MEMBER(file_f_vfsmnt)) {
+                    vfsmnt = ULONG(file_buf + OFFSET(file_f_vfsmnt));
+                    get_pathname(dentry, core_data->vma_cache[index].buf, BUFSIZE, 1, vfsmnt);
+                } else
+                    get_pathname(dentry, core_data->vma_cache[index].buf, BUFSIZE, 1, 0);
+            }
+
+        } else if (core_data->vma_cache[index].anon_name) {
+            readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
+                    anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
+            snprintf(core_data->vma_cache[index].buf, BUFSIZE, "[anon:%s]", anon);
+        }
+
+        core_data->fileslen += strlen(core_data->vma_cache[index].buf) + 1;
+        // fprintf(fp, "%lx %s\n", core_data->vma_cache[index].vm_start, core_data->vma_cache[index].buf);
+    }
+}
+
+int parser_core_filter_vma(struct core_data_t* core_data, int index) {
+    if (core_data->filter_flags & FILTER_NON_READ_VMA) {
+        if (!(core_data->vma_cache[index].vm_flags & VM_READ))
+            return 1;
+    }
+
+    if (core_data->filter_flags &  FILTER_SANITIZER_SHADOW_VMA) {
+        if (!strcmp(core_data->vma_cache[index].buf, "[anon:low shadow]")
+                || !strcmp(core_data->vma_cache[index].buf, "[anon:high shadow]")
+                || !strncmp(core_data->vma_cache[index].buf, "[anon:hwasan", 12))
+            return 1;
+    }
+
+    return 0;
+}
+
 void parser_core_usage(void) {
-    fprintf(fp, "Usage: core -p <PID> [--file|-f <FILE_PATH>] [option]\n");
+    fprintf(fp, "Usage: core -p <PID> [--output|-o <FILE_PATH>] [option]\n");
     fprintf(fp, "   Option:\n");
     fprintf(fp, "       --zram: decompress zram page\n");
     fprintf(fp, "       --shmem: decompress shared memory on zram page\n");
+    fprintf(fp, "       --filter|-f: filter vma flags\n");
+    fprintf(fp, "   Filter Vma:\n");
+    fprintf(fp, "       1: filter-non-read-vma\n");
+    fprintf(fp, "       2: filter_sanitizer_shadow\n");
 }
