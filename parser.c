@@ -112,6 +112,8 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_file, "vm_area_struct", "vm_file");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_pgoff, "vm_area_struct", "vm_pgoff");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_anon_name, "vm_area_struct", "anon_name");
+    PARSER_MEMBER_OFFSET_INIT(vm_area_struct_anon_vma, "vm_area_struct", "anon_vma");
+    PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_mm, "vm_area_struct", "vm_mm");
     PARSER_MEMBER_OFFSET_INIT(task_struct_flags, "task_struct", "flags");
     PARSER_MEMBER_OFFSET_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_OFFSET_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
@@ -175,6 +177,8 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_file, "vm_area_struct", "vm_file");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_pgoff, "vm_area_struct", "vm_pgoff");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_anon_name, "vm_area_struct", "anon_name");
+    PARSER_MEMBER_SIZE_INIT(vm_area_struct_anon_vma, "vm_area_struct", "anon_vma");
+    PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_mm, "vm_area_struct", "vm_mm");
     PARSER_MEMBER_SIZE_INIT(task_struct_flags, "task_struct", "flags");
     PARSER_MEMBER_SIZE_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_SIZE_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
@@ -295,6 +299,8 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
                 (*vma_cache)[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
                 (*vma_cache)[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
                 (*vma_cache)[idx].anon_name = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_anon_name));
+                (*vma_cache)[idx].anon_vma = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_anon_vma));
+                (*vma_cache)[idx].vm_mm = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_mm));
                 idx++;
             }
             FREEBUF(entry_list);
@@ -325,6 +331,8 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
             (*vma_cache)[idx].vm_file = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_file));
             (*vma_cache)[idx].vm_pgoff = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_pgoff));
             (*vma_cache)[idx].anon_name = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_anon_name));
+            (*vma_cache)[idx].anon_vma = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_anon_vma));
+            (*vma_cache)[idx].vm_mm = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_mm));
             idx++;
             vm_next = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_next));
         }

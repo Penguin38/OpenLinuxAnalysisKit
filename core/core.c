@@ -36,7 +36,7 @@ void parser_core_main(void) {
                 if (args[optind]) core_data.file = args[optind];
                 break;
             case 'f':
-                if (args[optind]) core_data.filter_flags = atoi(args[optind]);
+                if (args[optind]) core_data.filter_flags = htol(args[optind], FAULT_ON_ERROR, NULL);
                 break;
             case 1:
                 core_data.parse_zram = 1;
@@ -173,8 +173,20 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
 }
 
 int parser_core_filter_vma(struct core_data_t* core_data, int index) {
-    if (core_data->filter_flags & FILTER_NON_READ_VMA) {
-        if (!(core_data->vma_cache[index].vm_flags & VM_READ))
+    if (core_data->filter_flags & FILTER_SPECIAL_VMA) {
+        if (!strcmp(core_data->vma_cache[index].buf, "/dev/binderfs/hwbinder")
+                || !strcmp(core_data->vma_cache[index].buf, "/dev/binderfs/binder")
+                || !strcmp(core_data->vma_cache[index].buf, "/dev/mali0"))
+            return 1;
+    }
+
+    if (core_data->filter_flags & FILTER_FILE_VMA) {
+        if (!core_data->vma_cache[index].anon_vma)
+            return 1;
+    }
+
+    if (core_data->filter_flags & FILTER_SHARED_VMA) {
+        if (core_data->vma_cache[index].vm_flags & (VM_SHARED | VM_MAYSHARE))
             return 1;
     }
 
@@ -182,6 +194,11 @@ int parser_core_filter_vma(struct core_data_t* core_data, int index) {
         if (!strcmp(core_data->vma_cache[index].buf, "[anon:low shadow]")
                 || !strcmp(core_data->vma_cache[index].buf, "[anon:high shadow]")
                 || !strncmp(core_data->vma_cache[index].buf, "[anon:hwasan", 12))
+            return 1;
+    }
+
+    if (core_data->filter_flags & FILTER_NON_READ_VMA) {
+        if (!(core_data->vma_cache[index].vm_flags & VM_READ))
             return 1;
     }
 
@@ -195,6 +212,11 @@ void parser_core_usage(void) {
     fprintf(fp, "       --shmem: decompress shared memory on zram page\n");
     fprintf(fp, "       --filter|-f: filter vma flags\n");
     fprintf(fp, "   Filter Vma:\n");
-    fprintf(fp, "       1: filter-non-read-vma\n");
-    fprintf(fp, "       2: filter_sanitizer_shadow\n");
+    fprintf(fp, "       0x01: filter-special-vma\n");
+    fprintf(fp, "       0x02: filter-file-vma\n");
+    fprintf(fp, "       0x04: filter-shared-vma\n");
+    fprintf(fp, "       0x08: filter-sanitizer-shadow-vma\n");
+    fprintf(fp, "       0x10: filter-non-read-vma\n");
+    fprintf(fp, "   Example:\n");
+    fprintf(fp, "       lp core -p 1 --zram --shmem -f 0x1b\n");
 }

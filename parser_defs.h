@@ -39,6 +39,8 @@ struct parser_offset_table {
     long vm_area_struct_vm_file;
     long vm_area_struct_vm_pgoff;
     long vm_area_struct_anon_name;
+    long vm_area_struct_anon_vma;
+    long vm_area_struct_vm_mm;
     long task_struct_flags;
     long task_struct_thread;
     long thread_struct_sctlr_user;
@@ -117,6 +119,8 @@ struct parser_size_table {
     long vm_area_struct_vm_file;
     long vm_area_struct_vm_pgoff;
     long vm_area_struct_anon_name;
+    long vm_area_struct_anon_vma;
+    long vm_area_struct_vm_mm;
     long task_struct_flags;
     long task_struct_thread;
     long thread_struct_sctlr_user;
@@ -207,6 +211,8 @@ struct vma_cache_data {
     ulong vm_pgoff;
     ulong vm_file;
     ulong anon_name;
+    ulong anon_vma;
+    ulong vm_mm;
     char  buf[BUFSIZE];
 };
 

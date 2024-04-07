@@ -10,8 +10,11 @@
 void parser_core_main(void);
 void parser_core_usage(void);
 
-#define FILTER_NON_READ_VMA (1 << 0)
-#define FILTER_SANITIZER_SHADOW_VMA (1 << 1)
+#define FILTER_SPECIAL_VMA          (1 << 0)
+#define FILTER_FILE_VMA             (1 << 1)
+#define FILTER_SHARED_VMA           (1 << 2)
+#define FILTER_SANITIZER_SHADOW_VMA (1 << 3)
+#define FILTER_NON_READ_VMA         (1 << 4)
 
 struct core_data_t {
     // env
