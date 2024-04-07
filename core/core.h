@@ -25,6 +25,10 @@ struct core_data_t {
     char parse_zram;
     char parse_shmem;
 
+    ulong mm_start_stack;
+    ulong mm_start_brk;
+    ulong mm_brk;
+
     // core
     int class;
     int machine;

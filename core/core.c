@@ -71,6 +71,13 @@ void parser_core_main(void) {
         return;
     }
 
+    readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_start_stack), KVADDR,
+            &core_data.mm_start_stack, PARSER_SIZE(mm_struct_start_stack), "mm_struct_start_stack", FAULT_ON_ERROR);
+    readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_start_brk), KVADDR,
+            &core_data.mm_start_brk, PARSER_SIZE(mm_struct_start_brk), "mm_struct_start_brk", FAULT_ON_ERROR);
+    readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_brk), KVADDR,
+            &core_data.mm_brk, PARSER_SIZE(mm_struct_brk), "mm_struct_brk", FAULT_ON_ERROR);
+
     fill_thread_info(core_data.tc->thread_info);
     thread_info_flags = UINT(tt->thread_info + PARSER_OFFSET(thread_info_flags));
 
@@ -164,7 +171,17 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
         } else if (core_data->vma_cache[index].anon_name) {
             readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
                     anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
-            snprintf(core_data->vma_cache[index].buf, BUFSIZE, "[anon:%s]", anon);
+            snprintf(core_data->vma_cache[index].buf, BUFSIZE + 7, "[anon:%s]", anon);
+        } else {
+            if (core_data->vma_cache[index].vm_start < core_data->mm_brk
+                    && core_data->vma_cache[index].vm_end > core_data->mm_start_brk) {
+                snprintf(core_data->vma_cache[index].buf, BUFSIZE, "[heap]");
+            }
+
+            if (core_data->vma_cache[index].vm_start <= core_data->mm_start_stack
+                    && core_data->vma_cache[index].vm_end >= core_data->mm_start_stack) {
+                snprintf(core_data->vma_cache[index].buf, BUFSIZE, "[stack]");
+            }
         }
 
         core_data->fileslen += strlen(core_data->vma_cache[index].buf) + 1;

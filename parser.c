@@ -104,6 +104,9 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(mm_struct_task_size, "mm_struct", "task_size");
     PARSER_MEMBER_OFFSET_INIT(mm_struct_mmap, "mm_struct", "mmap");
     PARSER_MEMBER_OFFSET_INIT(mm_struct_mm_mt, "mm_struct", "mm_mt");
+    PARSER_MEMBER_OFFSET_INIT(mm_struct_start_stack, "mm_struct", "start_stack");
+    PARSER_MEMBER_OFFSET_INIT(mm_struct_start_brk, "mm_struct", "start_brk");
+    PARSER_MEMBER_OFFSET_INIT(mm_struct_brk, "mm_struct", "brk");
     PARSER_MEMBER_OFFSET_INIT(thread_info_flags, "thread_info", "flags");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_next, "vm_area_struct", "vm_next");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_start, "vm_area_struct", "vm_start");
@@ -169,6 +172,9 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(mm_struct_task_size, "mm_struct", "task_size");
     PARSER_MEMBER_SIZE_INIT(mm_struct_mmap, "mm_struct", "mmap");
     PARSER_MEMBER_SIZE_INIT(mm_struct_mm_mt, "mm_struct", "mm_mt");
+    PARSER_MEMBER_SIZE_INIT(mm_struct_start_stack, "mm_struct", "start_stack");
+    PARSER_MEMBER_SIZE_INIT(mm_struct_start_brk, "mm_struct", "start_brk");
+    PARSER_MEMBER_SIZE_INIT(mm_struct_brk, "mm_struct", "brk");
     PARSER_MEMBER_SIZE_INIT(thread_info_flags, "thread_info", "flags");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_next, "vm_area_struct", "vm_next");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_start, "vm_area_struct", "vm_start");
