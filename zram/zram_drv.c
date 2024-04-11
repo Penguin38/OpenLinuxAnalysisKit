@@ -95,10 +95,56 @@ out:
     return zram_buf;
 }
 
+int parser_zram_read_swap_page_cache(ulong swap_type, ulong zram_offset, unsigned char* value, ulong error_handle) {
+    ulong swp_space;
+    physaddr_t paddr;
+
+    if (!pagecache_data_cache[swap_type].space)
+        return 0;
+
+    int idx = zram_offset >> SWAP_ADDRESS_SPACE_SHIFT;
+    if (idx >= pagecache_data_cache[swap_type].cache_count)
+        return 0;
+
+    ulong page_value = 0;
+    if (!pagecache_data_cache[swap_type].cache[idx].page_count) {
+        swp_space = pagecache_data_cache[swap_type].space + idx * PARSER_SIZE(address_space);
+        pagecache_data_cache[swap_type].cache[idx].page_count = do_xarray(swp_space + PARSER_OFFSET(address_space_i_pages), XARRAY_COUNT, NULL);
+
+        if (pagecache_data_cache[swap_type].cache[idx].page_count) {
+            pagecache_data_cache[swap_type].cache[idx].pages = (struct list_pair *)malloc(sizeof(struct list_pair) * pagecache_data_cache[swap_type].cache[idx].page_count);
+            BZERO(pagecache_data_cache[swap_type].cache[idx].pages, sizeof(struct list_pair) * pagecache_data_cache[swap_type].cache[idx].page_count);
+            do_xarray(swp_space + PARSER_OFFSET(address_space_i_pages), XARRAY_GATHER, pagecache_data_cache[swap_type].cache[idx].pages);
+        }
+    }
+
+    for (int index = 0; index < pagecache_data_cache[swap_type].cache[idx].page_count; ++index) {
+        if (pagecache_data_cache[swap_type].cache[idx].pages[index].index == zram_offset) {
+            page_value = (ulong)pagecache_data_cache[swap_type].cache[idx].pages[index].value;
+            break;
+        }
+    }
+
+    if (page_value) {
+        if (page_value & 1) {
+            return 0;
+        }
+        if (!is_page_ptr(page_value, &paddr)) {
+            return 0;
+        }
+        readmem(paddr, PHYSADDR, value, PAGESIZE(), "zram buffer", error_handle);
+        return 1;
+    }
+    return 0;
+}
+
 int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* value, ulong error_handle) {
     unsigned char *src = NULL;
     unsigned char *zram_buf = NULL;
     unsigned char *entry_buf = NULL;
+
+    if (zram_offset > zram_data_cache[swap_index].pages)
+        return 0;
 
     ulong outsize;
     ulong sector;
@@ -125,11 +171,16 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     FREEBUF(entry_buf);
 
     // ZRAM_WB
-    if ((flags & PARSER_ZRAM_FLAG_WB_BIT)
-            || !handle) {
-        if (error_handle == FAULT_ON_ERROR)
-            error(INFO, "Not support read zram offset %ld.\n", zram_offset);
-        return 0;
+    if ((flags & PARSER_ZRAM_FLAG_WB_BIT) || !handle) {
+        // try look swapcache
+        if (parser_zram_read_swap_page_cache(swap_index, zram_offset, value, error_handle)) {
+            return 1;
+        } else {
+            if (error_handle == FAULT_ON_ERROR)
+                error(INFO, "Not support read zram offset %ld. (flags = %lx, handle = %lx)\n"
+                        , zram_offset, flags, handle);
+            return 0;
+        }
     }
 
     // ZRAM_SAME

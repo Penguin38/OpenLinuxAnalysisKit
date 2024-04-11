@@ -6,6 +6,7 @@
 #include <string.h>
 
 struct zram_data_t* zram_data_cache = NULL;
+struct pagecache_data_t* pagecache_data_cache = NULL;
 ulong PARSER_ZRAM_FLAG_SHIFT = 0;
 ulong PARSER_ZRAM_FLAG_SAME_BIT = 0;
 ulong PARSER_ZRAM_FLAG_WB_BIT = 0;
@@ -25,6 +26,7 @@ void parser_zram_main(void) {
         {"offset", required_argument,  0, 'o'},
         {"type",   required_argument,  0, 't'},
         {"file",   required_argument,  0, 'f'},
+        {"data",   no_argument,        0, 'd'},
         {0,         0,                 0,  0 }
     };
 
@@ -34,7 +36,8 @@ void parser_zram_main(void) {
     int dump_zram_off = 0;
     int swap_type = 0;
     char *filename = NULL;
-    while ((opt = getopt_long(argcnt - 1, &args[1], "r:e:o:t:f:",
+    int debug_data = 0;
+    while ((opt = getopt_long(argcnt - 1, &args[1], "r:e:o:t:f:d",
                 long_options, &option_index)) != -1) {
         switch (opt) {
             case 'r':
@@ -61,7 +64,25 @@ void parser_zram_main(void) {
                 if (args[optind]) {
                     filename = args[optind];
                 } break;
+            case 'd':
+                debug_data = 1;
+                break;
         }
+    }
+
+    if (debug_data) {
+        for (int i = 0; i < zram_total; ++i) {
+            fprintf(fp, "zram_data_cache[%d].zram: %lx\n", i, zram_data_cache[i].zram);
+            fprintf(fp, "zram_data_cache[%d].pages: %lx\n", i, zram_data_cache[i].pages);
+            fprintf(fp, "pagecache_data_cache[%d].space: %lx\n", i, pagecache_data_cache[i].space);
+            fprintf(fp, "pagecache_data_cache[%d].cache_count: %d\n", i, pagecache_data_cache[i].cache_count);
+            fprintf(fp, "pagecache_data_cache[%d].cache: %p\n", i, pagecache_data_cache[i].cache);
+            for (int j = 0; j < pagecache_data_cache[i].cache_count; ++j) {
+                fprintf(fp, "pagecache_data_cache[%d].cache[%d].page_count: %d\n", i, j, pagecache_data_cache[i].cache[j].page_count);
+                fprintf(fp, "pagecache_data_cache[%d].cache[%d].pages: %p\n", i, j, pagecache_data_cache[i].cache[j].pages);
+            }
+        }
+        return;
     }
 
     unsigned char value[4096];
@@ -204,6 +225,8 @@ void parser_zram_data_init(void) {
     ulong vfsmnt;
     ulong bdev;
     ulong bd_disk;
+    ulong swp_space_ptr = 0x0;
+    ulong swp_space;
     int nr_swapfiles;
     char buf[BUFSIZE];
 
@@ -213,12 +236,17 @@ void parser_zram_data_init(void) {
     if (!symbol_exists("swap_info"))
         error(FATAL, "swap_info doesn't exist in this kernel!\n");
 
+    if (symbol_exists("swapper_spaces"))
+        swp_space_ptr = symbol_value("swapper_spaces");
+
     swap_info_init();
     swap_info_ptr = symbol_value("swap_info");
     readmem(symbol_value("nr_swapfiles"), KVADDR, &nr_swapfiles, sizeof(int), "nr_swapfiles", FAULT_ON_ERROR);
 
     zram_data_cache = (struct zram_data_t*)malloc(nr_swapfiles * sizeof(struct zram_data_t));
     BZERO(zram_data_cache, nr_swapfiles * sizeof(struct zram_data_t));
+    pagecache_data_cache = (struct pagecache_data_t*)malloc(nr_swapfiles * sizeof(struct pagecache_data_t));
+    BZERO(pagecache_data_cache, nr_swapfiles * sizeof(struct pagecache_data_t));
     zram_total = nr_swapfiles;
     for (int i = 0; i < nr_swapfiles; i++) {
         readmem(swap_info_ptr + i * sizeof(void *), KVADDR,
@@ -228,6 +256,17 @@ void parser_zram_data_init(void) {
         readmem(swap_info, KVADDR, swap_info_buf, PARSER_SIZE(swap_info_struct), "swap_info_buf", FAULT_ON_ERROR);
         swap_file = ULONG(swap_info_buf + PARSER_OFFSET(swap_info_struct_swap_file));
         zram_data_cache[i].pages = UINT(swap_info_buf + PARSER_OFFSET(swap_info_struct_pages));
+
+        if (swp_space_ptr) {
+            swp_space = swp_space_ptr + i * sizeof(void *);
+            readmem(swp_space, KVADDR, &pagecache_data_cache[i].space, sizeof(void *), "swp_spaces", FAULT_ON_ERROR);
+            if (pagecache_data_cache[i].space) {
+                pagecache_data_cache[i].cache_count = (zram_data_cache[i].pages + 1)/(1<<SWAP_ADDRESS_SPACE_SHIFT);
+                pagecache_data_cache[i].cache = (struct swap_space_cache_data_t*)malloc(
+                                                pagecache_data_cache[i].cache_count * sizeof(struct swap_space_cache_data_t));
+                BZERO(pagecache_data_cache[i].cache, pagecache_data_cache[i].cache_count * sizeof(struct swap_space_cache_data_t));
+            }
+        }
 
         if (!swap_file) continue;
         if (PARSER_VALID_MEMBER(swap_info_struct_swap_vfsmnt)) {
@@ -257,6 +296,17 @@ void parser_zram_data_init(void) {
 
 void parser_zram_data_uninit(void) {
     if (zram_data_cache) free(zram_data_cache);
+    if (pagecache_data_cache) {
+        for (int i = 0; i < zram_total; ++i) {
+            if (!pagecache_data_cache[i].cache) continue;
+            for (int j = 0; j < pagecache_data_cache[i].cache_count; ++j) {
+                if (pagecache_data_cache[i].cache[j].pages)
+                    free(pagecache_data_cache[i].cache[j].pages);
+            }
+            free(pagecache_data_cache[i].cache);
+        }
+        free(pagecache_data_cache);
+    }
 }
 
 int parser_zram_read_buf(ulong vaddr, unsigned char* value, ulong error_handle) {

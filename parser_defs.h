@@ -147,6 +147,7 @@ struct parser_size_table {
     long file_f_inode;
     long anon_vma_name_name;
     long inode_i_mapping;
+    long address_space;
     long address_space_i_pages;
     long binder_proc;
     long binder_proc_pid;

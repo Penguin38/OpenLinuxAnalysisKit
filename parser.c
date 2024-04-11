@@ -206,6 +206,7 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(file_f_inode, "file", "f_inode");
     PARSER_MEMBER_SIZE_INIT(anon_vma_name_name, "anon_vma_name", "name");
     PARSER_MEMBER_SIZE_INIT(inode_i_mapping, "inode", "i_mapping");
+    PARSER_STRUCT_SIZE_INIT(address_space, "address_space");
     PARSER_MEMBER_SIZE_INIT(address_space_i_pages, "address_space", "i_pages");
     PARSER_STRUCT_SIZE_INIT(binder_proc, "binder_proc");
     PARSER_MEMBER_SIZE_INIT(binder_proc_pid, "binder_proc", "pid");
