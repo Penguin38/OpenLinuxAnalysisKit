@@ -150,6 +150,8 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
     char *file_buf;
     char anon[BUFSIZE];
     ulong dentry, vfsmnt;
+    physaddr_t paddr;
+    unsigned char page_buf[4096];
 
     for (int index = 0; index < core_data->vma_count; ++index) {
         file_buf = NULL;
@@ -169,8 +171,32 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
             }
 
         } else if (core_data->vma_cache[index].anon_name) {
-            readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
-                    anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
+            if (PARSER_VALID_MEMBER(anon_vma_name_name)) {
+                readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
+                        anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
+            } else if (IS_KVADDR(core_data->vma_cache[index].anon_name)) {
+                readmem(core_data->vma_cache[index].anon_name, KVADDR,
+                        anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
+            } else {
+#ifdef ARM64
+                core_data->vma_cache[index].anon_name &= ((1ULL << machdep->machspec->VA_BITS_ACTUAL) - 1);
+#endif
+                memset(&page_buf, 0x0, sizeof(page_buf));
+                paddr = (physaddr_t)0x0;
+                int page_exist = uvtop(core_data->tc, core_data->vma_cache[index].anon_name, &paddr, 0);
+
+                if (paddr) {
+                    if (page_exist) {
+                        readmem(paddr, PHYSADDR, anon, BUFSIZE, "read anon_name", FAULT_ON_ERROR);
+                    } else if (core_data->parse_zram) {
+                        ulong zram_offset = SWP_OFFSET(paddr);
+                        ulong swap_type = SWP_TYPE(paddr);
+                        parser_zram_read_page(swap_type, zram_offset, page_buf, FAULT_ON_ERROR);
+                        ulong off = PAGEOFFSET(core_data->vma_cache[index].anon_name);
+                        memcpy(anon, page_buf + off, (PAGESIZE() - off > BUFSIZE) ? BUFSIZE : (PAGESIZE() - off));
+                    }
+                }
+            }
             snprintf(core_data->vma_cache[index].buf, BUFSIZE + 7, "[anon:%s]", anon);
         } else {
             if (core_data->vma_cache[index].vm_start < core_data->mm_brk
