@@ -94,18 +94,16 @@ int parser_shmem_read_page(ulong vaddr, struct vma_cache_data* vma_cache,
             &i_mapping, PARSER_SIZE(inode_i_mapping), "inode i_mapping", error_handle);
 
     ulong i_pages = i_mapping + PARSER_OFFSET(address_space_i_pages);
-    int count = do_xarray(i_pages, XARRAY_COUNT, NULL);
-    if (idx >= count) return 0;
-
-    struct list_pair *page_list = (struct list_pair *)GETBUF(sizeof(struct list_pair) * count);
-    do_xarray(i_pages, XARRAY_GATHER, page_list);
-    ulong page = (ulong)(page_list[idx].value);
-    FREEBUF(page_list);
-    if (page & 1) {
-        ulong paddr = (page >> 1) << 8;
-        ulong zram_offset = SWP_OFFSET(paddr);
-        ulong swap_type = SWP_TYPE(paddr);
-        return parser_zram_read_page(swap_type, zram_offset, value, error_handle);
+    struct list_pair lp;
+    lp.index = idx;
+    if (do_xarray(i_pages, XARRAY_SEARCH, &lp)) {
+        ulong page = (ulong)lp.value;
+        if (page & 1) {
+            ulong paddr = (page >> 1) << 8;
+            ulong zram_offset = SWP_OFFSET(paddr);
+            ulong swap_type = SWP_TYPE(paddr);
+            return parser_zram_read_page(swap_type, zram_offset, value, error_handle);
+        }
     }
     return 0;
 }
@@ -138,8 +136,14 @@ int parser_shmem_read_page_cache(ulong vaddr, struct vma_cache_data* vma_cache, 
                 struct list_pair *page_list, unsigned char* value, ulong error_handle) {
     ulong vm_pgoff = vma_cache->vm_pgoff << PAGESHIFT();
     int idx = (vaddr - vma_cache->vm_start + vm_pgoff) >> PAGESHIFT();
-    if (!(idx < count)) return 0;
-    ulong page = (ulong)(page_list[idx].value);
+    ulong page = 0x0;
+    for (int i = 0; i < count; ++i) {
+        if (page_list[i].index == idx) {
+            page = (ulong)page_list[i].value;
+            break;
+        }
+    }
+
     if (page & 1) {
         ulong paddr = (page >> 1) << 8;
         ulong zram_offset = SWP_OFFSET(paddr);
