@@ -19,20 +19,23 @@
  * 0: original lzo version
  * 1: lzo with support for RLE
  */
+
+#include "unaligned.h"
+
 #define LZO_VERSION 1
+#define CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS
 
 #define COPY4(dst, src)	\
-		put_unaligned(get_unaligned((const u32 *)(src)), (u32 *)(dst))
+		put_unaligned_32(get_unaligned_32((const uint32_t *)(src)), (uint32_t *)(dst))
 #if defined(X86_64) || defined(ARM64)
 #define COPY8(dst, src)	\
-		put_unaligned(get_unaligned((const u64 *)(src)), (u64 *)(dst))
+		put_unaligned_64(get_unaligned_64((const uint64_t *)(src)), (uint64_t *)(dst))
 #else
 #define COPY8(dst, src)	\
 		COPY4(dst, src); COPY4((dst) + 4, (src) + 4)
 #endif
 
-#if defined(__BIG_ENDIAN) && defined(__LITTLE_ENDIAN)
-#elif defined(X86_64) || defined(ARM64)
+#if defined(X86_64) || defined(ARM64)
 #define LZO_USE_CTZ64	1
 #define LZO_USE_CTZ32	1
 #define LZO_FAST_64BIT_MEMORY_ACCESS

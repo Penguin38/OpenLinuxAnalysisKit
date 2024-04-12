@@ -21,8 +21,6 @@
 
 #define likely(x)		__builtin_expect(!!(x), 1)
 #define unlikely(x)		__builtin_expect(!!(x), 0)
-static inline unsigned short LZO_GET_LE16(const unsigned char *a) { return (a[1] << 8) | a[0]; }
-#define get_unaligned_le16(p)	LZO_GET_LE16((void *) (p))
 
 #define HAVE_IP(x)      ((size_t)(ip_end - ip) >= (size_t)(x))
 #define HAVE_OP(x)      ((size_t)(op_end - op) >= (size_t)(x))
