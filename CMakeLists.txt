@@ -24,5 +24,6 @@ add_library(linux-parser SHARED
             crypto.c
             lib/lzo/lzo1x_decompress_safe.c
             shmem/shmem.c
-            binder/binder.c)
+            binder/binder.c
+            pageowner/page_owner.c)
 set_target_properties(linux-parser PROPERTIES PREFIX "")

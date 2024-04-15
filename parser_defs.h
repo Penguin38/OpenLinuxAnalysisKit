@@ -24,8 +24,6 @@
 #define VM_MAYEXEC  0x00000040
 #define VM_MAYSHARE 0x00000080
 
-#define GENMASK(h, l) (((1ULL<<(h+1))-1)&(~((1ULL<<l)-1)))
-
 struct parser_offset_table {
     long mm_struct_saved_auxv;
     long mm_struct_task_size;
@@ -91,6 +89,19 @@ struct parser_offset_table {
     long binder_node_work;
     long binder_node_ptr;
     long binder_node_cookie;
+    long page_owner_order;
+    long page_owner_gfp_mask;
+    long page_owner_handle;
+    long page_owner_ts_nsec;
+    long page_owner_free_ts_nsec;
+    long page_owner_comm;
+    long page_owner_pid;
+    long page_owner_tgid;
+    long mem_section_page_ext;
+    long page_ext_flags;
+    long page_ext_operations_offset;
+    long stack_record_entries;
+    long stack_record_size;
 
     // zram
     long zram_disksize;
@@ -179,6 +190,22 @@ struct parser_size_table {
     long binder_node_work;
     long binder_node_ptr;
     long binder_node_cookie;
+    long page_owner;
+    long page_owner_order;
+    long page_owner_gfp_mask;
+    long page_owner_handle;
+    long page_owner_ts_nsec;
+    long page_owner_free_ts_nsec;
+    long page_owner_comm;
+    long page_owner_pid;
+    long page_owner_tgid;
+    long mem_section;
+    long mem_section_page_ext;
+    long page_ext;
+    long page_ext_flags;
+    long page_ext_operations_offset;
+    long stack_record_entries;
+    long stack_record_size;
 
     // zram
     long zram;
@@ -227,9 +254,6 @@ uint64_t align_down(uint64_t x, uint64_t n);
 uint64_t align_up(uint64_t x, uint64_t n);
 void parser_convert_ascii(ulong value, char *ascii);
 int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache);
-
-#define BIT(nr)         (1UL << (nr))
-#define BIT_ULL(nr)     (1ULL << (nr))
 
 // crypto
 void *crypto_comp_get_decompress(const char* name);

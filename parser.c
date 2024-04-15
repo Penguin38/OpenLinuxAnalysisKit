@@ -5,6 +5,7 @@
 #include "zram/zram.h"
 #include "shmem/shmem.h"
 #include "binder/binder.h"
+#include "pageowner/page_owner.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -51,7 +52,7 @@ struct parser_commands g_parser_commands[] = {
     {"shmem", parser_shmem_main, parser_shmem_usage},
     {"binder", parser_binder_main, parser_binder_usage},
     {"meminfo", NULL, NULL},
-    {"page_owner", NULL, NULL},
+    {"page_owner", parser_page_owner_main, parser_page_owner_usage},
     {"dmabuf", NULL, NULL},
     {"help", parser_help_main, NULL}
 };
@@ -164,6 +165,19 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(binder_node_work, "binder_node", "work");
     PARSER_MEMBER_OFFSET_INIT(binder_node_ptr, "binder_node", "ptr");
     PARSER_MEMBER_OFFSET_INIT(binder_node_cookie, "binder_node", "cookie");
+    PARSER_MEMBER_OFFSET_INIT(mem_section_page_ext, "mem_section", "page_ext");
+    PARSER_MEMBER_OFFSET_INIT(page_ext_flags, "page_ext", "flags");
+    PARSER_MEMBER_OFFSET_INIT(page_ext_operations_offset, "page_ext_operations", "offset");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_order, "page_owner", "order");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_gfp_mask, "page_owner", "gfp_mask");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_handle, "page_owner", "handle");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_ts_nsec, "page_owner", "ts_nsec");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_free_ts_nsec, "page_owner", "free_ts_nsec");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_comm, "page_owner", "comm");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_pid, "page_owner", "pid");
+    PARSER_MEMBER_OFFSET_INIT(page_owner_tgid, "page_owner", "tgid");
+    PARSER_MEMBER_OFFSET_INIT(stack_record_entries, "stack_record", "entries");
+    PARSER_MEMBER_OFFSET_INIT(stack_record_size, "stack_record", "size");
 }
 
 static void parser_size_table_init(void) {
@@ -238,6 +252,21 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(binder_node_work, "binder_node", "work");
     PARSER_MEMBER_SIZE_INIT(binder_node_ptr, "binder_node", "ptr");
     PARSER_MEMBER_SIZE_INIT(binder_node_cookie, "binder_node", "cookie");
+    PARSER_STRUCT_SIZE_INIT(page_owner, "page_owner");
+    PARSER_STRUCT_SIZE_INIT(mem_section, "mem_section");
+    PARSER_STRUCT_SIZE_INIT(page_ext, "page_ext");
+    PARSER_MEMBER_SIZE_INIT(mem_section_page_ext, "mem_section", "page_ext");
+    PARSER_MEMBER_SIZE_INIT(page_ext_flags, "page_ext", "flags");
+    PARSER_MEMBER_SIZE_INIT(page_ext_operations_offset, "page_ext_operations", "offset");
+    PARSER_MEMBER_SIZE_INIT(page_owner_order, "page_owner", "order");
+    PARSER_MEMBER_SIZE_INIT(page_owner_gfp_mask, "page_owner", "gfp_mask");
+    PARSER_MEMBER_SIZE_INIT(page_owner_handle, "page_owner", "handle");
+    PARSER_MEMBER_SIZE_INIT(page_owner_ts_nsec, "page_owner", "ts_nsec");
+    PARSER_MEMBER_SIZE_INIT(page_owner_free_ts_nsec, "page_owner", "free_ts_nsec");
+    PARSER_MEMBER_SIZE_INIT(page_owner_comm, "page_owner", "comm");
+    PARSER_MEMBER_SIZE_INIT(page_owner_pid, "page_owner", "pid");
+    PARSER_MEMBER_SIZE_INIT(page_owner_tgid, "page_owner", "tgid");
+    PARSER_MEMBER_SIZE_INIT(stack_record_size, "stack_record", "size");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {

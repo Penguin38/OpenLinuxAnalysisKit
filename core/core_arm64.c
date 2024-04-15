@@ -1,6 +1,7 @@
 // Copyright (C) 2024-present, Guanyou.Chen. All rights reserved.
 
 #include "core.h"
+#include "bits.h"
 
 #define TIF_TAGGED_ADDR	26
 #define PR_TAGGED_ADDR_ENABLE   (1UL << 0)
