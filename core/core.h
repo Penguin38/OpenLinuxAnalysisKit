@@ -24,6 +24,7 @@ struct core_data_t {
     int filter_flags;
     char parse_zram;
     char parse_shmem;
+    ulong error_handle;
 
     ulong mm_start_stack;
     ulong mm_start_brk;

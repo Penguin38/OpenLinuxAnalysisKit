@@ -45,7 +45,10 @@ void parser_page_owner_dump(struct pageowner_data_t* pageowner_data) {
     ulong max_pfn = pageowner_data->max_pfn;
 
     for(; pfn < max_pfn; pfn++) {
+        page = 0x0;
         phys_to_page(PTOB(pfn), &page);
+        if (!page) continue;
+
         if (pageowner_data->page && pageowner_data->page != page)
             continue;
 

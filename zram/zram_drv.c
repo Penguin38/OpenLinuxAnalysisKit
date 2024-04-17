@@ -3,6 +3,7 @@
 #include "zram.h"
 
 void parser_zram_obj_to_location(ulong obj, ulong *page, unsigned int* obj_idx) {
+    *page = 0x0;
     obj >>= OBJ_TAG_BITS;
     phys_to_page(PTOB(obj >> OBJ_INDEX_BITS), page);
     *obj_idx = (obj & OBJ_INDEX_MASK);
@@ -19,6 +20,7 @@ unsigned char *parser_zram_zs_map_object(ulong pool, ulong handle, unsigned char
 
     readmem(handle, KVADDR, &obj, sizeof(void *), "zram entry", error_handle);
     parser_zram_obj_to_location(obj, &page, &obj_idx);
+    if (!page) return NULL;
 
     readmem(page + PARSER_OFFSET(page_private), KVADDR, &zspage,
             PARSER_SIZE(page_private), "page_private", error_handle);

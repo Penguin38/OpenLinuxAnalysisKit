@@ -25,6 +25,7 @@ void parser_core_main(void) {
         {0,             0,                 0,  0 }
     };
 
+    core_data.error_handle = QUIET;
     core_data.pid = CURRENT_PID();
     while ((opt = getopt_long(argcnt - 1, &args[1], "p:o:f:012",
                 long_options, &option_index)) != -1) {
@@ -173,10 +174,10 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
         } else if (core_data->vma_cache[index].anon_name) {
             if (PARSER_VALID_MEMBER(anon_vma_name_name)) {
                 readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
-                        anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
+                        anon, BUFSIZE, "anon_name", core_data->error_handle);
             } else if (IS_KVADDR(core_data->vma_cache[index].anon_name)) {
                 readmem(core_data->vma_cache[index].anon_name, KVADDR,
-                        anon, BUFSIZE, "anon_name", FAULT_ON_ERROR);
+                        anon, BUFSIZE, "anon_name", core_data->error_handle);
             } else {
 #ifdef ARM64
                 core_data->vma_cache[index].anon_name &= ((1ULL << machdep->machspec->VA_BITS_ACTUAL) - 1);
@@ -187,11 +188,11 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
 
                 if (paddr) {
                     if (page_exist) {
-                        readmem(paddr, PHYSADDR, anon, BUFSIZE, "read anon_name", FAULT_ON_ERROR);
+                        readmem(paddr, PHYSADDR, anon, BUFSIZE, "read anon_name", core_data->error_handle);
                     } else if (core_data->parse_zram) {
                         ulong zram_offset = SWP_OFFSET(paddr);
                         ulong swap_type = SWP_TYPE(paddr);
-                        parser_zram_read_page(swap_type, zram_offset, page_buf, FAULT_ON_ERROR);
+                        parser_zram_read_page(swap_type, zram_offset, page_buf, core_data->error_handle);
                         ulong off = PAGEOFFSET(core_data->vma_cache[index].anon_name);
                         memcpy(anon, page_buf + off, (PAGESIZE() - off > BUFSIZE) ? BUFSIZE : (PAGESIZE() - off));
                     }
