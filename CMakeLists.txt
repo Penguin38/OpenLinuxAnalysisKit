@@ -5,7 +5,7 @@ project(OpenLinuxAnalysisKit)
 
 string(TOUPPER "${CMAKE_BUILD_TARGET_ARCH}" BUILD_TARGET_ARCH)
 add_definitions(-D${BUILD_TARGET_ARCH})
-add_definitions(-DIS_LITTLE_ENDIAN)
+add_definitions(-D__LITTLE_ENDIAN)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -rdynamic -Wall")
 
 include_directories(.)
@@ -23,6 +23,7 @@ add_library(linux-parser SHARED
             zram/zram_drv.c
             crypto.c
             lib/lzo/lzo1x_decompress_safe.c
+            lib/lz4/lz4_decompress.c
             shmem/shmem.c
             binder/binder.c
             pageowner/page_owner.c)

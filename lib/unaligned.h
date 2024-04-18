@@ -6,7 +6,7 @@
 #include "le_byteshift.h"
 #include "be_byteshift.h"
 
-#if defined(IS_LITTLE_ENDIAN)
+#if defined(__LITTLE_ENDIAN)
 #define get_unaligned_8 get_unaligned_le8
 #define put_unaligned_8 put_unaligned_le8
 #define get_unaligned_16 get_unaligned_le16
