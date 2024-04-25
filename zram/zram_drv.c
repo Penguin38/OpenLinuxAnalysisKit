@@ -12,7 +12,6 @@ void parser_zram_obj_to_location(ulong obj, ulong *page, unsigned int* obj_idx) 
 unsigned char *parser_zram_zs_map_object(ulong pool, ulong handle, unsigned char *zram_buf, ulong error_handle) {
     ulong obj, off, class, page, zspage;
     struct zspage zspage_s;
-    struct zspage_5_17 zspage_5_17_s;
     physaddr_t paddr;
     unsigned int obj_idx, class_idx, size;
     ulong pages[2], sizes[2];
@@ -25,14 +24,13 @@ unsigned char *parser_zram_zs_map_object(ulong pool, ulong handle, unsigned char
     readmem(page + PARSER_OFFSET(page_private), KVADDR, &zspage,
             PARSER_SIZE(page_private), "page_private", error_handle);
 
+    readmem(zspage, KVADDR, &zspage_s, sizeof(struct zspage), "zspage", error_handle);
     if (PARSER_VALID_MEMBER(zspage_huge)) {
-        readmem(zspage, KVADDR, &zspage_5_17_s, sizeof(struct zspage_5_17), "zspage_5_17", error_handle);
-        class_idx = zspage_5_17_s.class;
-        zs_magic = zspage_5_17_s.magic;
+        class_idx = zspage_s.v5_17.class;
+        zs_magic = zspage_s.v5_17.magic;
     } else {
-        readmem(zspage, KVADDR, &zspage_s, sizeof(struct zspage), "zspage", error_handle);
-        class_idx = zspage_s.class;
-        zs_magic = zspage_s.magic;
+        class_idx = zspage_s.v0.class;
+        zs_magic = zspage_s.v0.magic;
     }
 
     if (zs_magic != ZSPAGE_MAGIC) {
@@ -90,7 +88,7 @@ out:
             return (zram_buf + ZS_HANDLE_SIZE);
         }
     } else {
-        if (!zspage_5_17_s.huge) {
+        if (!zspage_s.v5_17.huge) {
             return (zram_buf + ZS_HANDLE_SIZE);
         }
     }
