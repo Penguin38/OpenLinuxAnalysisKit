@@ -80,7 +80,7 @@ void parser_page_owner_top_print(ulong pages, int pid) {
     if (pages) {
         tc = pid_to_context(pid);
         if (!tc) {
-            fprintf(fp, "PID:%-5d alloc %lu pages\n", pid, pages);
+            fprintf(fp, "PID:%-5d                  alloc %lu pages\n", pid, pages);
         } else {
             fprintf(fp, "PID:%-5d %-16s alloc %lu pages\n", pid, tc->comm, pages);
         }
@@ -293,37 +293,29 @@ unsigned int parser_stack_depot_fetch(struct pageowner_data_t* pageowner_data, i
     ulong stack_slabs = pageowner_data->stack_slabs;
     ulong sr_size;
     ulong slab;
+    ulong offset;
+    ulong slabindex;
 
+    union handle_parts parts = { .handle = handle };
     if (THIS_KERNEL_VERSION >= LINUX(6,1,0)) {
-        union handle_parts_6_1 parts = { .handle = handle };
-        ulong offset = parts.offset << STACK_ALLOC_ALIGN;
-
-        *entries = 0x0;
-        if (!handle) return 0;
-        if (parts.slabindex > depot_index) return 0;
-
-        readmem(stack_slabs + parts.slabindex * sizeof(void *), KVADDR, &slab, sizeof(ulong), "slab", FAULT_ON_ERROR);
-        if (!slab) return 0;
-
-        ulong stack = slab + offset;
-        *entries = stack + PARSER_OFFSET(stack_record_entries);
-        readmem(stack + PARSER_OFFSET(stack_record_size), KVADDR,
-                &sr_size, PARSER_SIZE(stack_record_size), "stack_record_size", FAULT_ON_ERROR);
+        offset = parts.v6_1.offset << STACK_ALLOC_ALIGN;
+        slabindex = parts.v6_1.slabindex;
     } else {
-        union handle_parts parts = { .handle = handle };
-        ulong offset = parts.offset << STACK_ALLOC_ALIGN;
-
-        *entries = 0x0;
-        if (!handle) return 0;
-        if (parts.slabindex > depot_index) return 0;
-
-        readmem(stack_slabs + parts.slabindex * sizeof(void *), KVADDR, &slab, sizeof(ulong), "slab", FAULT_ON_ERROR);
-        if (!slab) return 0;
-
-        ulong stack = slab + offset;
-        *entries = stack + PARSER_OFFSET(stack_record_entries);
-        readmem(stack + PARSER_OFFSET(stack_record_size), KVADDR,
-                &sr_size, PARSER_SIZE(stack_record_size), "stack_record_size", FAULT_ON_ERROR);
+        offset = parts.v0.offset << STACK_ALLOC_ALIGN;
+        slabindex = parts.v0.slabindex;
     }
+
+    *entries = 0x0;
+    if (!handle) return 0;
+    if (slabindex > depot_index) return 0;
+
+    readmem(stack_slabs + slabindex * sizeof(void *), KVADDR, &slab, sizeof(ulong), "slab", FAULT_ON_ERROR);
+    if (!slab) return 0;
+
+    ulong stack = slab + offset;
+    *entries = stack + PARSER_OFFSET(stack_record_entries);
+    readmem(stack + PARSER_OFFSET(stack_record_size), KVADDR,
+            &sr_size, PARSER_SIZE(stack_record_size), "stack_record_size", FAULT_ON_ERROR);
+
     return sr_size;
 }

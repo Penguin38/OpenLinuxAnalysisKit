@@ -58,17 +58,13 @@ union handle_parts {
         unsigned int slabindex : 21;
         unsigned int offset : 10;
         unsigned int valid : 1;
-    };
-};
-
-union handle_parts_6_1 {
-    unsigned int handle;
+    } v0;
     struct {
         unsigned int slabindex : 16;
         unsigned int offset : 10;
         unsigned int valid : 1;
         unsigned int extra : 5;
-    };
+    } v6_1;
 };
 
 #endif //  PAGEOWNER_PAGE_OWNER_H_
