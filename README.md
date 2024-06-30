@@ -37,7 +37,7 @@ Usage: core -p <PID> [--output|-o <FILE_PATH>] [option]
        0x08: filter-sanitizer-shadow-vma
        0x10: filter-non-read-vma
    Example:
-       lp core -p 1 --zram --shmem -f 0x1b
+       lp core -p 1 --zram --shmem -f 0x18
 ```
 
 # Example

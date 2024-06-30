@@ -262,5 +262,5 @@ void parser_core_usage(void) {
     fprintf(fp, "       0x08: filter-sanitizer-shadow-vma\n");
     fprintf(fp, "       0x10: filter-non-read-vma\n");
     fprintf(fp, "   Example:\n");
-    fprintf(fp, "       lp core -p 1 --zram --shmem -f 0x1b\n");
+    fprintf(fp, "       lp core -p 1 --zram --shmem -f 0x18\n");
 }
