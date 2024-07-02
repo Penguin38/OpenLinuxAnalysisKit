@@ -82,6 +82,7 @@ void parser_arm64_core_prstatus(struct core_data_t* core_data) {
 
     int CONFIG_ARM64_PTR_AUTH = get_kernel_config("CONFIG_ARM64_PTR_AUTH", NULL);
     int CONFIG_ARM64_TAGGED_ADDR_ABI = get_kernel_config("CONFIG_ARM64_TAGGED_ADDR_ABI", NULL);
+
     if (CONFIG_ARM64_PTR_AUTH) {
         core_data->extra_note_filesz += ((sizeof(struct user_pac_mask) + sizeof(Elf64_Nhdr) + 8)  // NT_ARM_PAC_MASK
                                      + (sizeof(uint64_t) + sizeof(Elf64_Nhdr) + 8)       // NT_ARM_PAC_ENABLED_KEYS
@@ -165,17 +166,18 @@ void parser_write_arm64_core_mte(struct core_data_t* core_data, int pid) {
     if (thread_info_flags & (1 << TIF_TAGGED_ADDR))
         tagged_addr_ctrl |= PR_TAGGED_ADDR_ENABLE;
 
-    ulong mte_ctrl;
-    readmem(tc->task + PARSER_OFFSET(task_struct_thread) + PARSER_OFFSET(thread_struct_mte_ctrl),
-            KVADDR, &mte_ctrl, sizeof(ulong), "mte_ctrl", FAULT_ON_ERROR);
+    ulong mte_ctrl = -1;
+    if (PARSER_VALID_MEMBER(thread_struct_mte_ctrl)) {
+        readmem(tc->task + PARSER_OFFSET(task_struct_thread) + PARSER_OFFSET(thread_struct_mte_ctrl),
+                KVADDR, &mte_ctrl, sizeof(ulong), "mte_ctrl", FAULT_ON_ERROR);
 
-    ulong incl = (~mte_ctrl >> MTE_CTRL_GCR_USER_EXCL_SHIFT) & MTE_CTRL_GCR_USER_EXCL_MASK;
-    tagged_addr_ctrl = incl << PR_MTE_TAG_SHIFT;
-    if (mte_ctrl & MTE_CTRL_TCF_ASYNC)
-        tagged_addr_ctrl |= PR_MTE_TCF_ASYNC;
-    if (mte_ctrl & MTE_CTRL_TCF_SYNC)
-        tagged_addr_ctrl |= PR_MTE_TCF_SYNC;
-
+        ulong incl = (~mte_ctrl >> MTE_CTRL_GCR_USER_EXCL_SHIFT) & MTE_CTRL_GCR_USER_EXCL_MASK;
+        tagged_addr_ctrl = incl << PR_MTE_TAG_SHIFT;
+        if (mte_ctrl & MTE_CTRL_TCF_ASYNC)
+            tagged_addr_ctrl |= PR_MTE_TCF_ASYNC;
+        if (mte_ctrl & MTE_CTRL_TCF_SYNC)
+            tagged_addr_ctrl |= PR_MTE_TCF_SYNC;
+    }
     fwrite(&tagged_addr_ctrl, sizeof(uint64_t), 1, core_data->fp);
 }
 

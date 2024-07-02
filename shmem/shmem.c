@@ -116,6 +116,9 @@ int parser_shmem_get_page_cache(struct vma_cache_data* vma_cache,
 
     ulong f_inode;
     ulong i_mapping;
+    ulong xarray;
+    ulong root_rnode;
+    int count;
 
     readmem(vma_cache->vm_file + PARSER_OFFSET(file_f_inode), KVADDR,
             &f_inode, PARSER_SIZE(file_f_inode), "file f_inode", error_handle);
@@ -123,11 +126,27 @@ int parser_shmem_get_page_cache(struct vma_cache_data* vma_cache,
     readmem(f_inode + PARSER_OFFSET(inode_i_mapping), KVADDR,
             &i_mapping, PARSER_SIZE(inode_i_mapping), "inode i_mapping", error_handle);
 
-    ulong i_pages = i_mapping + PARSER_OFFSET(address_space_i_pages);
-    int count = do_xarray(i_pages, XARRAY_COUNT, NULL);
-    if (count) {
-        *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
-        do_xarray(i_pages, XARRAY_GATHER, *page_list);
+    xarray = root_rnode = count = 0;
+    if (MEMBER_EXISTS("address_space", "i_pages") &&
+        (STREQ(MEMBER_TYPE_NAME("address_space", "i_pages"), "xarray") ||
+        (STREQ(MEMBER_TYPE_NAME("address_space", "i_pages"), "radix_tree_root") &&
+         MEMBER_EXISTS("radix_tree_root", "xa_head"))))
+        xarray = i_mapping + PARSER_OFFSET(address_space_i_pages);
+    else
+        root_rnode = i_mapping + PARSER_OFFSET(address_space_i_pages);
+
+    if (root_rnode) {
+        count = do_radix_tree(root_rnode, RADIX_TREE_COUNT, NULL);
+        if (count) {
+            *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
+            do_radix_tree(root_rnode, RADIX_TREE_GATHER, *page_list);
+        }
+    } else {
+        count = do_xarray(xarray, XARRAY_COUNT, NULL);
+        if (count) {
+            *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
+            do_xarray(xarray, XARRAY_GATHER, *page_list);
+        }
     }
     return count;
 }

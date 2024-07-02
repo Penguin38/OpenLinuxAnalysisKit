@@ -27,6 +27,7 @@ void parser_core_main(void) {
 
     core_data.error_handle = QUIET;
     core_data.pid = CURRENT_PID();
+    core_data.filter_flags = FILTER_SANITIZER_SHADOW_VMA | FILTER_NON_READ_VMA;
     while ((opt = getopt_long(argcnt - 1, &args[1], "p:o:f:012",
                 long_options, &option_index)) != -1) {
         switch (opt) {
@@ -259,8 +260,8 @@ void parser_core_usage(void) {
     fprintf(fp, "       0x01: filter-special-vma\n");
     fprintf(fp, "       0x02: filter-file-vma\n");
     fprintf(fp, "       0x04: filter-shared-vma\n");
-    fprintf(fp, "       0x08: filter-sanitizer-shadow-vma\n");
-    fprintf(fp, "       0x10: filter-non-read-vma\n");
+    fprintf(fp, "       0x08: filter-sanitizer-shadow-vma (default)\n");
+    fprintf(fp, "       0x10: filter-non-read-vma (default)\n");
     fprintf(fp, "   Example:\n");
     fprintf(fp, "       lp core -p 1 --zram --shmem -f 0x18\n");
 }

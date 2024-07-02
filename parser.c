@@ -135,7 +135,9 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(file_f_inode, "file", "f_inode");
     PARSER_MEMBER_OFFSET_INIT(anon_vma_name_name, "anon_vma_name", "name");
     PARSER_MEMBER_OFFSET_INIT(inode_i_mapping, "inode", "i_mapping");
-    PARSER_MEMBER_OFFSET_INIT(address_space_i_pages, "address_space", "i_pages");
+    PARSER_MEMBER_OFFSET_INIT(address_space_i_pages, "address_space", "page_tree");
+    if (!PARSER_VALID_MEMBER(address_space_i_pages))
+        PARSER_MEMBER_OFFSET_INIT(address_space_i_pages, "address_space", "i_pages");
     PARSER_MEMBER_OFFSET_INIT(binder_proc_proc_node, "binder_proc", "proc_node");
     PARSER_MEMBER_OFFSET_INIT(binder_proc_pid, "binder_proc", "pid");
     PARSER_MEMBER_OFFSET_INIT(binder_proc_context, "binder_proc", "context");

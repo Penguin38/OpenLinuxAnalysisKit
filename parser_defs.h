@@ -59,6 +59,7 @@ struct parser_offset_table {
     long file_f_inode;
     long anon_vma_name_name;
     long inode_i_mapping;
+    long address_space_page_tree;
     long address_space_i_pages;
     long binder_proc_proc_node;
     long binder_proc_pid;
