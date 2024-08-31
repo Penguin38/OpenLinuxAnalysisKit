@@ -40,7 +40,7 @@ void parser_write_core_note32(struct core_data_t* core_data, Elf32_Phdr *note) {
     note->p_filesz += (core_data->prstatus_sizeof + sizeof(Elf32_Nhdr) + 8) * core_data->prnum;
     note->p_filesz += sizeof(Elf32_auxv) * core_data->auxvnum + sizeof(Elf32_Nhdr) + 8;
     note->p_filesz += core_data->extra_note_filesz;
-    note->p_filesz += sizeof(Elf32_ntfile) * core_data->vma_count + sizeof(Elf32_Nhdr) + 8 + 2 * 4 + core_data->fileslen;
+    note->p_filesz += sizeof(Elf32_ntfile) * core_data->vma_count + sizeof(Elf32_Nhdr) + 8 + 2 * 4 + align_up(core_data->fileslen, 4);
     fwrite(note, sizeof(Elf32_Phdr), 1, core_data->fp);
 }
 
@@ -133,7 +133,7 @@ void parser_write_core_auxv32(struct core_data_t* core_data) {
 void parser_write_core_file32(struct core_data_t* core_data, Elf32_Phdr *note) {
     Elf32_Nhdr nhdr;
     nhdr.n_namesz = NOTE_CORE_NAME_SZ;
-    nhdr.n_descsz = sizeof(Elf32_ntfile) * core_data->vma_count + 2 * 4 + core_data->fileslen;
+    nhdr.n_descsz = sizeof(Elf32_ntfile) * core_data->vma_count + 2 * 4 + align_up(core_data->fileslen, 4);
     nhdr.n_type = NT_FILE;
 
     char magic[8];
@@ -172,8 +172,9 @@ void parser_write_core_file32(struct core_data_t* core_data, Elf32_Phdr *note) {
 void parser_core_note_align32(struct core_data_t* core_data, Elf32_Phdr *note) {
     unsigned char zero[4096];
     memset(&zero, 0x0, sizeof(zero));
-    uint64_t offset = align_up(note->p_offset + note->p_filesz, PAGESIZE());
-    uint64_t size = offset - (note->p_offset + note->p_filesz);
+    uint32_t align_filesz = note->p_filesz - align_up(core_data->fileslen, 4) + core_data->fileslen;
+    uint32_t offset = align_up(note->p_offset + align_filesz, PAGESIZE());
+    uint32_t size = offset - (note->p_offset + align_filesz);
     fwrite(zero, size, 1, core_data->fp);
 }
 
