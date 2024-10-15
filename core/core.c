@@ -243,7 +243,9 @@ int parser_core_filter_vma(struct core_data_t* core_data, int index) {
     }
 
     if (core_data->filter_flags & FILTER_NON_READ_VMA) {
-        if (!(core_data->vma_cache[index].vm_flags & VM_READ))
+        if (!(core_data->vma_cache[index].vm_flags & VM_READ)
+                && !(core_data->vma_cache[index].vm_flags & VM_WRITE)
+                && !(core_data->vma_cache[index].vm_flags & VM_EXEC))
             return 1;
     }
 
