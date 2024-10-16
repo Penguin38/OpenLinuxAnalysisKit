@@ -6,6 +6,7 @@
 #include "shmem/shmem.h"
 #include "binder/binder.h"
 #include "pageowner/page_owner.h"
+#include "trace/trace.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -54,11 +55,12 @@ struct parser_commands g_parser_commands[] = {
     {"meminfo", NULL, NULL},
     {"page_owner", parser_page_owner_main, parser_page_owner_usage},
     {"dmabuf", NULL, NULL},
+    {"trace", parser_trace_main, parser_trace_usage},
     {"help", parser_help_main, NULL}
 };
 
 void cmd_parser(void) {
-    if (argcnt < 1) return;
+    if (argcnt < 2) return;
 
     int count = sizeof(g_parser_commands)/sizeof(g_parser_commands[0]);
     for (int i = 0; i < count; ++i) {

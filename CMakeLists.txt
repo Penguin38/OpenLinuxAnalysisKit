@@ -26,5 +26,6 @@ add_library(linux-parser SHARED
             lib/lz4/lz4_decompress.c
             shmem/shmem.c
             binder/binder.c
-            pageowner/page_owner.c)
+            pageowner/page_owner.c
+            trace/trace.c)
 set_target_properties(linux-parser PROPERTIES PREFIX "")
