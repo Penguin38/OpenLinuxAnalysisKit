@@ -110,6 +110,7 @@ struct parser_offset_table {
     long zram_table;
     long zram_mem_pool;
     long zram_comp;
+    long zram_comps;
     long zram_table_entry_flags;
     long zram_table_entry_handle;
     long zram_table_entry_element;
@@ -215,6 +216,7 @@ struct parser_size_table {
     long zram_table;
     long zram_mem_pool;
     long zram_comp;
+    long zram_comps;
     long zram_table_entry;
     long zram_table_entry_flags;
     long zram_table_entry_handle;

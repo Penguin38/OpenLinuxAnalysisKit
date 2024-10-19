@@ -26,8 +26,13 @@ unsigned char *parser_zram_zs_map_object(ulong pool, ulong handle, unsigned char
 
     readmem(zspage, KVADDR, &zspage_s, sizeof(struct zspage), "zspage", error_handle);
     if (PARSER_VALID_MEMBER(zspage_huge)) {
-        class_idx = zspage_s.v5_17.class;
-        zs_magic = zspage_s.v5_17.magic;
+        if (THIS_KERNEL_VERSION >= LINUX(6,6,0)) {
+            class_idx = zspage_s.v6_6.class;
+            zs_magic = zspage_s.v6_6.magic;
+        } else {
+            class_idx = zspage_s.v5_17.class;
+            zs_magic = zspage_s.v5_17.magic;
+        }
     } else {
         class_idx = zspage_s.v0.class;
         zs_magic = zspage_s.v0.magic;
@@ -154,6 +159,7 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     ulong objsize;
     ulong handle;
     ulong element;
+    ulong prio = 0;
 
     sector = zram_offset << (PAGESHIFT() - 9);
     index = sector >> SECTORS_PER_PAGE_SHIFT;
@@ -167,8 +173,11 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     flags = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_flags));
     handle = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_handle));
     element = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_element));
-    objsize = flags & (PARSER_ZRAM_FLAG_SHIFT - 1);
     FREEBUF(entry_buf);
+
+    objsize = flags & (PARSER_ZRAM_FLAG_SHIFT - 1);
+    if (zram_data_cache[swap_index].comp_count > 1)
+        prio = (flags >> PARSER_ZRAM_COMP_PRIORITY_BIT1) & PARSER_ZRAM_COMP_PRIORITY_MASK;
 
     // ZRAM_WB
     if ((flags & PARSER_ZRAM_FLAG_WB_BIT) || !handle) {
@@ -207,8 +216,8 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     if (objsize == PAGESIZE()) {
         memcpy(value, src, outsize);
     } else {
-        if (zram_data_cache[swap_index].decompress)
-            zram_data_cache[swap_index].decompress(src, value, objsize, outsize);
+        if (zram_data_cache[swap_index].decompress[prio])
+            zram_data_cache[swap_index].decompress[prio](src, value, objsize, outsize);
     }
     FREEBUF(zram_buf);
     return 1;

@@ -29,10 +29,11 @@ struct pagecache_data_t {
 struct zram_data_t {
     ulong zram;
     ulong pages;
-    ulong comp;
+    ulong comp_count;
+    ulong comp[4];
     ulong mem_pool;
     ulong table;
-    int (*decompress)(unsigned char *source, unsigned char *dest,
+    int (*decompress[4])(unsigned char *source, unsigned char *dest,
                       int compressedSize, int maxDecompressedSize);
 };
 
@@ -41,5 +42,7 @@ extern struct pagecache_data_t* pagecache_data_cache;
 extern ulong PARSER_ZRAM_FLAG_SHIFT;
 extern ulong PARSER_ZRAM_FLAG_SAME_BIT;
 extern ulong PARSER_ZRAM_FLAG_WB_BIT;
+extern ulong PARSER_ZRAM_COMP_PRIORITY_BIT1;
+extern ulong PARSER_ZRAM_COMP_PRIORITY_MASK;
 
 #endif //  ZRAM_ZRAM_H_

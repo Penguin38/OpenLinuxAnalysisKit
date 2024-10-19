@@ -10,6 +10,8 @@ struct pagecache_data_t* pagecache_data_cache = NULL;
 ulong PARSER_ZRAM_FLAG_SHIFT = 0;
 ulong PARSER_ZRAM_FLAG_SAME_BIT = 0;
 ulong PARSER_ZRAM_FLAG_WB_BIT = 0;
+ulong PARSER_ZRAM_COMP_PRIORITY_BIT1 = 0;
+ulong PARSER_ZRAM_COMP_PRIORITY_MASK = 0;
 static int zram_total = 0;
 static int zram_ready = 0;
 static int zsmalloc_ready = 0;
@@ -73,6 +75,10 @@ void parser_zram_main(void) {
     if (debug_data) {
         for (int i = 0; i < zram_total; ++i) {
             fprintf(fp, "zram_data_cache[%d].zram: %lx\n", i, zram_data_cache[i].zram);
+            fprintf(fp, "zram_data_cache[%d].comp_count: %ld\n", i, zram_data_cache[i].comp_count);
+            for (int k = 0; k < zram_data_cache[i].comp_count; k++) {
+                fprintf(fp, "zram_data_cache[%d].comp[%d]: %lx\n", i, k, zram_data_cache[i].comp[k]);
+            }
             fprintf(fp, "zram_data_cache[%d].pages: %lx\n", i, zram_data_cache[i].pages);
             fprintf(fp, "pagecache_data_cache[%d].space: %lx\n", i, pagecache_data_cache[i].space);
             fprintf(fp, "pagecache_data_cache[%d].cache_count: %d\n", i, pagecache_data_cache[i].cache_count);
@@ -136,22 +142,27 @@ void parser_zram_usage(void) {
 void parser_zram_init(void) {
     // zram.ko
     unsigned char *fill_zram_buf = NULL;
+    ulong nameptr;
+    char name[128];
+
     if (!zram_ready) {
         PARSER_MEMBER_OFFSET_INIT(zram_disksize, "zram", "disksize");
-        PARSER_MEMBER_OFFSET_INIT(zram_compressor, "zram", "compressor");
+        // PARSER_MEMBER_OFFSET_INIT(zram_compressor, "zram", "compressor");
         PARSER_MEMBER_OFFSET_INIT(zram_table, "zram", "table");
         PARSER_MEMBER_OFFSET_INIT(zram_mem_pool, "zram", "mem_pool");
         PARSER_MEMBER_OFFSET_INIT(zram_comp, "zram", "comp");
+        PARSER_MEMBER_OFFSET_INIT(zram_comps, "zram", "comps");
         PARSER_MEMBER_OFFSET_INIT(zram_table_entry_flags, "zram_table_entry", "flags");
         PARSER_MEMBER_OFFSET_INIT(zram_table_entry_handle, "zram_table_entry", "handle");
         PARSER_MEMBER_OFFSET_INIT(zram_table_entry_element, "zram_table_entry", "element");
         PARSER_MEMBER_OFFSET_INIT(zcomp_name, "zcomp", "name");
 
         PARSER_MEMBER_SIZE_INIT(zram_disksize, "zram", "disksize");
-        PARSER_MEMBER_SIZE_INIT(zram_compressor, "zram", "compressor");
+        // PARSER_MEMBER_SIZE_INIT(zram_compressor, "zram", "compressor");
         PARSER_MEMBER_SIZE_INIT(zram_table, "zram", "table");
         PARSER_MEMBER_SIZE_INIT(zram_mem_pool, "zram", "mem_pool");
         PARSER_MEMBER_SIZE_INIT(zram_comp, "zram", "comp");
+        PARSER_MEMBER_SIZE_INIT(zram_comps, "zram", "comps");
         PARSER_MEMBER_SIZE_INIT(zram_table_entry_flags, "zram_table_entry", "flags");
         PARSER_MEMBER_SIZE_INIT(zram_table_entry_handle, "zram_table_entry", "handle");
         PARSER_MEMBER_SIZE_INIT(zram_table_entry_element, "zram_table_entry", "element");
@@ -176,27 +187,37 @@ void parser_zram_init(void) {
         PARSER_ZRAM_FLAG_SHIFT = 1 << zram_flag_shift;
         PARSER_ZRAM_FLAG_SAME_BIT = 1 << (zram_flag_shift + 1);
         PARSER_ZRAM_FLAG_WB_BIT = 1 << (zram_flag_shift + 2);
+        PARSER_ZRAM_COMP_PRIORITY_BIT1 = zram_flag_shift + 7;
+        PARSER_ZRAM_COMP_PRIORITY_MASK = 0x3;
 
         for (int i = 0; i < zram_total; ++i) {
             if (!zram_data_cache[i].zram) continue;
             fill_zram_buf = (unsigned char *)GETBUF(PARSER_SIZE(zram));
             BZERO(fill_zram_buf, PARSER_SIZE(zram));
             readmem(zram_data_cache[i].zram, KVADDR, fill_zram_buf, PARSER_SIZE(zram), "fill_zram_buf", FAULT_ON_ERROR);
-            zram_data_cache[i].comp = ULONG(fill_zram_buf + PARSER_OFFSET(zram_comp));
+            if (!PARSER_VALID_MEMBER(zram_comps)) {
+                zram_data_cache[i].comp_count = 1;
+                zram_data_cache[i].comp[0] = ULONG(fill_zram_buf + PARSER_OFFSET(zram_comp));
+            } else {
+                zram_data_cache[i].comp_count = PARSER_SIZE(zram_comps) / sizeof(void *);
+                for (int k = 0; k < zram_data_cache[i].comp_count; k++) {
+                    zram_data_cache[i].comp[k] = ULONG(fill_zram_buf + PARSER_OFFSET(zram_comps) + 8 * k);
+                }
+            }
             zram_data_cache[i].table = ULONG(fill_zram_buf + PARSER_OFFSET(zram_table));
             zram_data_cache[i].mem_pool = ULONG(fill_zram_buf + PARSER_OFFSET(zram_mem_pool));
             FREEBUF(fill_zram_buf);
 
             // crypto decompress
-            ulong nameptr;
-            char name[128];
-            memset(name, 0x0, sizeof(name));
-            if (zram_data_cache[i].comp) {
-                readmem(zram_data_cache[i].comp + PARSER_OFFSET(zcomp_name), KVADDR,
-                        &nameptr, PARSER_SIZE(zcomp_name), "zcomp_name", FAULT_ON_ERROR);
-                readmem(nameptr, KVADDR, name, sizeof(name), "compress name", FAULT_ON_ERROR);
+            for (int k = 0; k < zram_data_cache[i].comp_count; k++) {
+                memset(name, 0x0, sizeof(name));
+                if (zram_data_cache[i].comp[k]) {
+                    readmem(zram_data_cache[i].comp[k] + PARSER_OFFSET(zcomp_name), KVADDR,
+                            &nameptr, PARSER_SIZE(zcomp_name), "zcomp_name", FAULT_ON_ERROR);
+                    readmem(nameptr, KVADDR, name, sizeof(name), "compress name", FAULT_ON_ERROR);
+                }
+                zram_data_cache[i].decompress[k] = crypto_comp_get_decompress(name);
             }
-            zram_data_cache[i].decompress = crypto_comp_get_decompress(name);
         }
         zram_ready = 1;
     }
