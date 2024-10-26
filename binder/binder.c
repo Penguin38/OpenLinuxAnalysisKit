@@ -92,7 +92,7 @@ void parser_binder_print_binder_proc(ulong proc) {
     readmem(context + PARSER_OFFSET(binder_context_name), KVADDR,
             &nameptr, PARSER_SIZE(binder_context_name), "binder_context_name", FAULT_ON_ERROR);
     readmem(nameptr, KVADDR, name, sizeof(name), "name", FAULT_ON_ERROR);
-    fprintf(fp, "proc %d\n", UINT(binder_proc_buf + PARSER_OFFSET(binder_proc_pid)));
+    fprintf(fp, "[%lx] proc %d\n", proc, UINT(binder_proc_buf + PARSER_OFFSET(binder_proc_pid)));
     fprintf(fp, "context %s\n", name);
 
     struct tree_data td;
@@ -146,8 +146,8 @@ void parser_binder_print_binder_thread_ilocked(ulong thread) {
     int looper = UINT(binder_thread_buf + PARSER_OFFSET(binder_thread_looper));
     char looper_need_return = BOOL(binder_thread_buf + PARSER_OFFSET(binder_thread_looper_need_return));
     int tmp_ref = UINT(binder_thread_buf + PARSER_OFFSET(binder_thread_tmp_ref));
-    fprintf(fp, "  thread %d: l %02x need_return %d tr %d\n",
-            pid, looper, looper_need_return, tmp_ref);
+    fprintf(fp, "  [%lx] thread %d: l %02x need_return %d tr %d\n",
+            thread, pid, looper, looper_need_return, tmp_ref);
 
     ulong proc = ULONG(binder_thread_buf + PARSER_OFFSET(binder_thread_proc));
     ulong transaction_stack = ULONG(binder_thread_buf + PARSER_OFFSET(binder_thread_transaction_stack));
