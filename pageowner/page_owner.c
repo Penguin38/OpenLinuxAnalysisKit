@@ -26,8 +26,15 @@ int parser_page_owner_data_init(struct pageowner_data_t* pageowner_data) {
     readmem(symbol_value("page_owner_ops") + PARSER_OFFSET(page_ext_operations_offset), KVADDR,
             &pageowner_data->page_owner_ops_offset, PARSER_SIZE(page_ext_operations_offset), "page_ext_operations_offset", FAULT_ON_ERROR);
 
-    readmem(symbol_value("depot_index"), KVADDR, &pageowner_data->depot_index, sizeof(int), "depot_index", FAULT_ON_ERROR);
-    pageowner_data->stack_slabs = symbol_value("stack_slabs");
+    if (symbol_exists("depot_index"))
+        readmem(symbol_value("depot_index"), KVADDR, &pageowner_data->depot_index, sizeof(int), "depot_index", FAULT_ON_ERROR);
+    if (symbol_exists("stack_slabs"))
+        pageowner_data->stack_slabs = symbol_value("stack_slabs");
+
+    if (symbol_exists("pool_index"))
+        readmem(symbol_value("pool_index"), KVADDR, &pageowner_data->depot_index, sizeof(int), "pool_index", FAULT_ON_ERROR);
+    if (symbol_exists("stack_pools"))
+        pageowner_data->stack_slabs = symbol_value("stack_pools");
 
     enumerator_value("PAGE_EXT_OWNER", &pageowner_data->PAGE_EXT_OWNER);
     enumerator_value("PAGE_EXT_OWNER_ALLOCATED", &pageowner_data->PAGE_EXT_OWNER_ALLOCATED);
