@@ -117,6 +117,7 @@ int parser_zram_read_swap_page_cache(ulong swap_type, ulong zram_offset, unsigne
     if (!pagecache_data_cache[swap_type].cache[idx].page_count) {
         swp_space = pagecache_data_cache[swap_type].space + idx * PARSER_SIZE(address_space);
 
+        xarray = root_rnode = 0;
         if (MEMBER_EXISTS("address_space", "i_pages") &&
             (STREQ(MEMBER_TYPE_NAME("address_space", "i_pages"), "xarray") ||
             (STREQ(MEMBER_TYPE_NAME("address_space", "i_pages"), "radix_tree_root") &&
@@ -189,7 +190,7 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     BZERO(entry_buf, PARSER_SIZE(zram_table_entry));
     readmem(entry, KVADDR, entry_buf, PARSER_SIZE(zram_table_entry), "zram_table_entry", error_handle);
     flags = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_flags));
-    handle = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_handle));
+    handle = ULONG(entry_buf /*+ PARSER_OFFSET(zram_table_entry_handle)*/); // handle or entry
     element = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_element));
     FREEBUF(entry_buf);
 
