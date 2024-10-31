@@ -57,12 +57,12 @@ void parser_arm_core_prstatus(struct core_data_t* core_data) {
             if (!core_data->compat) {
                 readmem(machdep->get_stacktop(tc->task) - PARSER_SIZE(pt_regs), KVADDR,
                         &prstatus[cur].pr_reg, sizeof(struct pt_regs), "gpr_get: user_pt_regs",
-                        FAULT_ON_ERROR);
+                        core_data->error_handle);
             } else {
                 memset(&regs, 0x0, sizeof(struct parser_arm64_pt_regs));
                 readmem(machdep->get_stacktop(tc->task) - PARSER_SIZE(pt_regs), KVADDR,
                         &regs, sizeof(struct parser_arm64_pt_regs), "gpr_get: user_pt_regs",
-                        FAULT_ON_ERROR);
+                        core_data->error_handle);
 
                 prstatus[cur].pr_reg.regs[0] = regs.regs[0];
                 prstatus[cur].pr_reg.regs[1] = regs.regs[1];

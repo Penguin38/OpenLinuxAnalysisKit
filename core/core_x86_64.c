@@ -74,7 +74,7 @@ void parser_x86_64_core_prstatus(struct core_data_t* core_data) {
 
             readmem(machdep->get_stacktop(tc->task) - PARSER_SIZE(pt_regs), KVADDR,
                     &prstatus[cur].pr_reg, sizeof(struct pt_regs), "gpr_get: user_pt_regs",
-                    FAULT_ON_ERROR);
+                    core_data->error_handle);
             cur++;
         }
     }
