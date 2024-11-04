@@ -829,6 +829,15 @@ struct kernel_table {                   /* kernel data */
 #define IS_KERNEL_STATIC_TEXT(x) (((ulong)(x) >= kt->stext) && \
 		  	          ((ulong)(x) < kt->etext))
 
+#define THIS_KERNEL_RELEASE (kt->utsname.release)
+
+struct android_table {
+	uint android_version[2];
+};
+#define IS_ANDROID_KERNEL_REL (at->android_version[0] > 0)
+#define THIS_ANDROID_VERSION ((at->android_version[0] << 16) + (at->android_version[1]))
+#define ANDROID(x,y) (((uint)(x) << 16) + (uint)(y))
+
 #define TASK_COMM_LEN 16     /* task command name length including NULL */
 
 struct task_context {                     /* context stored for each task */
@@ -982,6 +991,7 @@ struct bt_info {
 	ulong eframe_ip;
 	ulong radix;
 	ulong *cpumask;
+	bool need_free;
 };
 
 #define STACK_OFFSET_TYPE(OFF) \
@@ -1080,7 +1090,7 @@ struct machdep_table {
         void (*get_irq_affinity)(int);
         void (*show_interrupts)(int, ulong *);
 	int (*is_page_ptr)(ulong, physaddr_t *);
-	int (*get_cpu_reg)(int, int, const char *, int, void *);
+	int (*get_current_task_reg)(int, const char *, int, void *);
 	int (*is_cpu_prstatus_valid)(int cpu);
 };
 
@@ -2240,6 +2250,24 @@ struct offset_table {                    /* stash of commonly-used offsets */
 	long mnt_namespace_nr_mounts;
 	long mount_mnt_node;
 	long log_caller_id;
+	long vmap_node_busy;
+	long rb_list_head;
+	long file_f_inode;
+	long page_page_type;
+	long inactive_task_frame_r15;
+	long inactive_task_frame_r14;
+	long inactive_task_frame_r13;
+	long inactive_task_frame_r12;
+	long inactive_task_frame_flags;
+	long inactive_task_frame_si;
+	long inactive_task_frame_di;
+	long inactive_task_frame_bx;
+	long thread_struct_es;
+	long thread_struct_ds;
+	long thread_struct_fsbase;
+	long thread_struct_gsbase;
+	long thread_struct_fs;
+	long thread_struct_gs;
 };
 
 struct size_table {         /* stash of commonly-used sizes */
@@ -2414,6 +2442,9 @@ struct size_table {         /* stash of commonly-used sizes */
 	long maple_tree;
 	long maple_node;
 	long module_memory;
+	long fred_frame;
+	long vmap_node;
+	long cpumask_t;
 };
 
 struct array_table {
@@ -2646,6 +2677,7 @@ struct vm_table {                /* kernel VM-related data */
 	ulong max_mem_section_nr;
 	ulong zero_paddr;
 	ulong huge_zero_paddr;
+	uint page_type_base;
 };
 
 #define NODES                       (0x1)
@@ -2678,6 +2710,12 @@ struct vm_table {                /* kernel VM-related data */
 #define SLAB_OVERLOAD_PAGE    (0x8000000)
 #define SLAB_CPU_CACHE       (0x10000000)
 #define SLAB_ROOT_CACHES     (0x20000000)
+#define USE_VMAP_NODES       (0x40000000)
+/*
+ * The SLAB_PAGEFLAGS flag is introduced to detect the change of
+ * PG_slab's type from a page flag to a page type.
+ */
+#define SLAB_PAGEFLAGS       (0x80000000)
 
 #define IS_FLATMEM()		(vt->flags & FLATMEM)
 #define IS_DISCONTIGMEM()	(vt->flags & DISCONTIGMEM)
@@ -3263,8 +3301,9 @@ typedef signed int s32;
 
 /*
  * 3-levels / 4K pages
+ * 39-bit VA
  */
-#define PTRS_PER_PGD_L3_4K   (512)
+#define PTRS_PER_PGD_L3_4K   ((1UL) << (39 - 30))
 #define PTRS_PER_PMD_L3_4K   (512)
 #define PTRS_PER_PTE_L3_4K   (512)
 #define PGDIR_SHIFT_L3_4K    (30)
@@ -3297,9 +3336,56 @@ typedef signed int s32;
 #define PGDIR_OFFSET_48VA(X) (((ulong)(X)) & (PGDIR_SIZE_48VA - 1))
 
 /*
- * 3-levels / 64K pages
+ * 2-levels / 16K pages
+ * 36-bit VA
  */
-#define PTRS_PER_PGD_L3_64K  (64)
+#define PTRS_PER_PGD_L2_16K  ((1UL) << (36 - 25))
+#define PTRS_PER_PTE_L2_16K  (2048)
+#define PGDIR_SHIFT_L2_16K   (25)
+#define PGDIR_SIZE_L2_16K    ((1UL) << PGDIR_SHIFT_L2_16K)
+#define PGDIR_MASK_L2_16K    (~(PGDIR_SIZE_L2_16K-1))
+#define PGDIR_OFFSET_L2_16K(X) (((ulong)(X)) & ((machdep->ptrs_per_pgd * 8) - 1))
+
+/*
+ * 3-levels / 16K pages
+ * 47-bit VA
+ */
+#define PTRS_PER_PGD_L3_16K   ((1UL) << (47 - 36))
+#define PTRS_PER_PMD_L3_16K   (2048)
+#define PTRS_PER_PTE_L3_16K   (2048)
+#define PGDIR_SHIFT_L3_16K    (36)
+#define PGDIR_SIZE_L3_16K     ((1UL) << PGDIR_SHIFT_L3_16K)
+#define PGDIR_MASK_L3_16K     (~(PGDIR_SIZE_L3_16K-1))
+#define PMD_SHIFT_L3_16K      (25)
+#define PMD_SIZE_L3_16K       (1UL << PMD_SHIFT_L3_16K)
+#define PMD_MASK_L3_16K       (~(PMD_SIZE_L3_16K-1))
+#define PGDIR_OFFSET_L3_16K(X) (((ulong)(X)) & ((machdep->ptrs_per_pgd * 8) - 1))
+
+/*
+ * 4-levels / 16K pages
+ * 48-bit VA
+ */
+#define PTRS_PER_PGD_L4_16K   ((1UL) << (48 - 47))
+#define PTRS_PER_PUD_L4_16K   (2048)
+#define PTRS_PER_PMD_L4_16K   (2048)
+#define PTRS_PER_PTE_L4_16K   (2048)
+#define PGDIR_SHIFT_L4_16K    (47)
+#define PGDIR_SIZE_L4_16K     ((1UL) << PGDIR_SHIFT_L4_16K)
+#define PGDIR_MASK_L4_16K     (~(PGDIR_SIZE_L4_16K-1))
+#define PUD_SHIFT_L4_16K      (36)
+#define PUD_SIZE_L4_16K       ((1UL) << PUD_SHIFT_L4_16K)
+#define PUD_MASK_L4_16K       (~(PUD_SIZE_L4_16K-1))
+#define PMD_SHIFT_L4_16K      (25)
+#define PMD_SIZE_L4_16K       (1UL << PMD_SHIFT_L4_16K)
+#define PMD_MASK_L4_16K       (~(PMD_SIZE_L4_16K-1))
+#define PGDIR_OFFSET_L4_16K(X) (((ulong)(X)) & ((machdep->ptrs_per_pgd * 8) - 1))
+
+/*
+ * 3-levels / 64K pages
+ * 48-bit, 52-bit VA
+ */
+#define PTRS_PER_PGD_L3_64K_48  ((1UL) << (48 - 42))
+#define PTRS_PER_PGD_L3_64K_52  ((1UL) << (52 - 42))
 #define PTRS_PER_PMD_L3_64K  (8192)
 #define PTRS_PER_PTE_L3_64K  (8192)
 #define PGDIR_SHIFT_L3_64K   (42)
@@ -3312,8 +3398,9 @@ typedef signed int s32;
 
 /*
  * 2-levels / 64K pages
+ * 42-bit VA
  */
-#define PTRS_PER_PGD_L2_64K  (8192)
+#define PTRS_PER_PGD_L2_64K  ((1UL) << (42 - 29))
 #define PTRS_PER_PTE_L2_64K  (8192)
 #define PGDIR_SHIFT_L2_64K   (29)
 #define PGDIR_SIZE_L2_64K    ((1UL) << PGDIR_SHIFT_L2_64K)
@@ -3361,6 +3448,9 @@ typedef signed int s32;
 #define HAS_PHYSVIRT_OFFSET (0x800)
 #define OVERFLOW_STACKS     (0x1000)
 #define ARM64_MTE     (0x2000)
+#define VM_L3_16K     (0x4000)
+#define VM_L2_16K     (0x8000)
+#define VM_L4_16K     (0x10000)
 
 /*
  * Get kimage_voffset from /dev/crash
@@ -3499,6 +3589,7 @@ struct machine_specific {
 	ulong CONFIG_ARM64_KERNELPACMASK;
 	ulong physvirt_offset;
 	ulong struct_page_size;
+	ulong vmemmap;
 };
 
 struct arm64_stackframe {
@@ -5330,6 +5421,7 @@ extern struct vm_table vm_table, *vt;
 extern struct machdep_table *machdep;
 extern struct symbol_table_data symbol_table_data, *st;
 extern struct extension_table *extension_table;
+extern struct android_table android_table, *at;
 
 /*
  *  Generated in build_data.c
@@ -6012,7 +6104,7 @@ extern char *help_map[];
  *  task.c
  */ 
 void task_init(void);
-int set_context(ulong, ulong);
+int set_context(ulong, ulong, uint);
 void show_context(struct task_context *);
 ulong pid_to_task(ulong);
 ulong task_to_pid(ulong);
@@ -6095,6 +6187,7 @@ int load_module_symbols_helper(char *);
 void unlink_module(struct load_module *);
 int check_specified_module_tree(char *, char *);
 int is_system_call(char *, ulong);
+void get_dumpfile_regs(struct bt_info*, ulong*, ulong*);
 void generic_dump_irq(int);
 void generic_get_irq_affinity(int);
 void generic_show_interrupts(int, ulong *);
@@ -6194,6 +6287,7 @@ ulong cpu_map_addr(const char *type);
 #define BT_REGS_NOT_FOUND (0x4000000000000ULL)
 #define BT_OVERFLOW_STACK (0x8000000000000ULL)
 #define BT_SKIP_IDLE     (0x10000000000000ULL)
+#define BT_NO_PRINT_REGS (0x20000000000000ULL)
 #define BT_SYMBOL_OFFSET   (BT_SYMBOLIC_ARGS)
 
 #define BT_REF_HEXVAL         (0x1)
@@ -7906,6 +8000,7 @@ extern unsigned char *gdb_prettyprint_arrays;
 extern unsigned int *gdb_repeat_count_threshold;
 extern unsigned char *gdb_stop_print_at_null;
 extern unsigned int *gdb_output_radix;
+int is_kvaddr(ulong);
 
 /*
  *  gdb/top.c
@@ -8006,9 +8101,16 @@ extern int have_full_symbols(void);
 #define XEN_HYPERVISOR_ARCH 
 #endif
 
+#ifndef offsetof
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
+#endif
+#define FIELD_SIZEOF(t, f) (sizeof(((t*)0)->f))
+#define REG_SEQ(TYPE, MEMBER) \
+	(offsetof(struct TYPE, MEMBER) / FIELD_SIZEOF(struct TYPE, MEMBER))
+
 /*
  * Register numbers must be in sync with gdb/features/i386/64bit-core.c
- * to make crash_target->fetch_registers() ---> machdep->get_cpu_reg()
+ * to make crash_target->fetch_registers() ---> machdep->get_current_task_reg()
  * working properly.
  */
 enum x86_64_regnum {
@@ -8052,7 +8154,169 @@ enum x86_64_regnum {
         FOSEG_REGNUM,
         FOOFF_REGNUM,
         FOP_REGNUM,
+        FS_BASE_REGNUM = 152,
+        GS_BASE_REGNUM,
+        ORIG_RAX_REGNUM,
         LAST_REGNUM
 };
+
+enum arm64_regnum {
+	X0_REGNUM,
+	X1_REGNUM,
+	X2_REGNUM,
+	X3_REGNUM,
+	X4_REGNUM,
+	X5_REGNUM,
+	X6_REGNUM,
+	X7_REGNUM,
+	X8_REGNUM,
+	X9_REGNUM,
+	X10_REGNUM,
+	X11_REGNUM,
+	X12_REGNUM,
+	X13_REGNUM,
+	X14_REGNUM,
+	X15_REGNUM,
+	X16_REGNUM,
+	X17_REGNUM,
+	X18_REGNUM,
+	X19_REGNUM,
+	X20_REGNUM,
+	X21_REGNUM,
+	X22_REGNUM,
+	X23_REGNUM,
+	X24_REGNUM,
+	X25_REGNUM,
+	X26_REGNUM,
+	X27_REGNUM,
+	X28_REGNUM,
+	X29_REGNUM,
+	X30_REGNUM,
+	SP_REGNUM,
+	PC_REGNUM,
+};
+
+/*
+ * Register numbers to make crash_target->fetch_registers()
+ * ---> machdep->get_current_task_reg() work properly.
+ *
+ *  These register numbers and names are given according to output of
+ *  `rs6000_register_name`, because that is what was being used by
+ *  crash_target::fetch_registers in case of PPC64
+ */
+enum ppc64_regnum {
+	PPC64_R0_REGNUM = 0,
+	PPC64_R1_REGNUM,
+	PPC64_R2_REGNUM,
+	PPC64_R3_REGNUM,
+	PPC64_R4_REGNUM,
+	PPC64_R5_REGNUM,
+	PPC64_R6_REGNUM,
+	PPC64_R7_REGNUM,
+	PPC64_R8_REGNUM,
+	PPC64_R9_REGNUM,
+	PPC64_R10_REGNUM,
+	PPC64_R11_REGNUM,
+	PPC64_R12_REGNUM,
+	PPC64_R13_REGNUM,
+	PPC64_R14_REGNUM,
+	PPC64_R15_REGNUM,
+	PPC64_R16_REGNUM,
+	PPC64_R17_REGNUM,
+	PPC64_R18_REGNUM,
+	PPC64_R19_REGNUM,
+	PPC64_R20_REGNUM,
+	PPC64_R21_REGNUM,
+	PPC64_R22_REGNUM,
+	PPC64_R23_REGNUM,
+	PPC64_R24_REGNUM,
+	PPC64_R25_REGNUM,
+	PPC64_R26_REGNUM,
+	PPC64_R27_REGNUM,
+	PPC64_R28_REGNUM,
+	PPC64_R29_REGNUM,
+	PPC64_R30_REGNUM,
+	PPC64_R31_REGNUM,
+
+	PPC64_F0_REGNUM = 32,
+	PPC64_F1_REGNUM,
+	PPC64_F2_REGNUM,
+	PPC64_F3_REGNUM,
+	PPC64_F4_REGNUM,
+	PPC64_F5_REGNUM,
+	PPC64_F6_REGNUM,
+	PPC64_F7_REGNUM,
+	PPC64_F8_REGNUM,
+	PPC64_F9_REGNUM,
+	PPC64_F10_REGNUM,
+	PPC64_F11_REGNUM,
+	PPC64_F12_REGNUM,
+	PPC64_F13_REGNUM,
+	PPC64_F14_REGNUM,
+	PPC64_F15_REGNUM,
+	PPC64_F16_REGNUM,
+	PPC64_F17_REGNUM,
+	PPC64_F18_REGNUM,
+	PPC64_F19_REGNUM,
+	PPC64_F20_REGNUM,
+	PPC64_F21_REGNUM,
+	PPC64_F22_REGNUM,
+	PPC64_F23_REGNUM,
+	PPC64_F24_REGNUM,
+	PPC64_F25_REGNUM,
+	PPC64_F26_REGNUM,
+	PPC64_F27_REGNUM,
+	PPC64_F28_REGNUM,
+	PPC64_F29_REGNUM,
+	PPC64_F30_REGNUM,
+	PPC64_F31_REGNUM,
+
+	PPC64_PC_REGNUM = 64,
+	PPC64_MSR_REGNUM = 65,
+	PPC64_CR_REGNUM = 66,
+	PPC64_LR_REGNUM = 67,
+	PPC64_CTR_REGNUM = 68,
+	PPC64_XER_REGNUM = 69,
+	PPC64_FPSCR_REGNUM = 70,
+
+	PPC64_VR0_REGNUM = 106,
+	PPC64_VR1_REGNUM,
+	PPC64_VR2_REGNUM,
+	PPC64_VR3_REGNUM,
+	PPC64_VR4_REGNUM,
+	PPC64_VR5_REGNUM,
+	PPC64_VR6_REGNUM,
+	PPC64_VR7_REGNUM,
+	PPC64_VR8_REGNUM,
+	PPC64_VR9_REGNUM,
+	PPC64_VR10_REGNUM,
+	PPC64_VR11_REGNUM,
+	PPC64_VR12_REGNUM,
+	PPC64_VR13_REGNUM,
+	PPC64_VR14_REGNUM,
+	PPC64_VR15_REGNUM,
+	PPC64_VR16_REGNUM,
+	PPC64_VR17_REGNUM,
+	PPC64_VR18_REGNUM,
+	PPC64_VR19_REGNUM,
+	PPC64_VR20_REGNUM,
+	PPC64_VR21_REGNUM,
+	PPC64_VR22_REGNUM,
+	PPC64_VR23_REGNUM,
+	PPC64_VR24_REGNUM,
+	PPC64_VR25_REGNUM,
+	PPC64_VR26_REGNUM,
+	PPC64_VR27_REGNUM,
+	PPC64_VR28_REGNUM,
+	PPC64_VR29_REGNUM,
+	PPC64_VR30_REGNUM,
+	PPC64_VR31_REGNUM,
+
+	PPC64_VSCR_REGNUM = 138,
+	PPC64_VRSAVE_REGNU = 139
+};
+
+/* crash_target.c */
+extern int gdb_change_thread_context (void);
 
 #endif /* !GDB_COMMON */

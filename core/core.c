@@ -56,7 +56,7 @@ void parser_core_main(void) {
         fprintf(fp, "No such pid: %d\n", core_data.pid);
         return;
     }
-    set_context(core_data.tc->task, NO_PID);
+    set_context(core_data.tc->task, NO_PID, TRUE);
 
     readmem(core_data.tc->task + PARSER_OFFSET(task_struct_flags), KVADDR,
             &flags, sizeof(flags), "task_struct flags", FAULT_ON_ERROR);
