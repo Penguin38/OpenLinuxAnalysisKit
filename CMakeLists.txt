@@ -27,5 +27,6 @@ add_library(linux-parser SHARED
             shmem/shmem.c
             binder/binder.c
             pageowner/page_owner.c
-            trace/trace.c)
+            trace/trace.c
+            cpu/cpu.c)
 set_target_properties(linux-parser PROPERTIES PREFIX "")

@@ -7,6 +7,7 @@
 #include "binder/binder.h"
 #include "pageowner/page_owner.h"
 #include "trace/trace.h"
+#include "cpu/cpu.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -45,6 +46,7 @@ void __attribute__((constructor)) parser_init(void) {
 
 void __attribute__((destructor)) parser_fini(void) {
     parser_zram_data_uninit();
+    parser_cpu_cache_clean();
 }
 
 struct parser_commands g_parser_commands[] = {
@@ -56,6 +58,7 @@ struct parser_commands g_parser_commands[] = {
     {"page_owner", parser_page_owner_main, parser_page_owner_usage},
     {"dmabuf", NULL, NULL},
     {"trace", parser_trace_main, parser_trace_usage},
+    {"cpu", parser_cpu_main, parser_cpu_usage},
     {"help", parser_help_main, NULL}
 };
 
