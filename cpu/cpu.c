@@ -9,10 +9,12 @@
 
 struct cpu_bitmap {
     int is_set;
-    void *cache;
+    void *precpu_cache;
+    void *panic_cache;
 };
 
 static struct cpu_bitmap* cpu_cache = NULL;
+static void* cpu_panic_task_regs_cache = NULL;
 struct cpu_bitmap* get_cpu_cache(void) {
     if (!cpu_cache) {
         int size = NR_CPUS * sizeof(struct cpu_bitmap);
@@ -113,11 +115,12 @@ static struct arm64_reg_map arm64_reg_maps[] = {
     {"x20", 20}, {"x21", 21}, {"x22", 22}, {"x23", 23},
     {"x24", 24}, {"x25", 25}, {"x26", 26}, {"x27", 27},
     {"x28", 28}, {"x29", 29}, {"x30", 30}, {"pc", 32},
-    {"sp", 31},
+    {"sp", 31},  {"pstate", 33}, {"spsr", 33},
 };
 
 static struct arm64_reg_map arm64_reg_sp_maps[] = {
     {"sp_el0", 31}, {"sp_el1", 31}, {"sp_el2", 31}, {"sp_el3", 31},
+    {"spsr_el0", 33}, {"spsr_el1", 33}, {"spsr_el2", 33}, {"spsr_el3", 33},
 };
 
 void parser_cpu_reset(int idx) {
@@ -125,9 +128,15 @@ void parser_cpu_reset(int idx) {
     struct cpu_bitmap* cache = get_cpu_cache();
     if (cache[idx].is_set) {
         free(vmd->nt_prstatus_percpu[idx]);
-        vmd->nt_prstatus_percpu[idx] = cache[idx].cache;
-        cache[idx].cache = 0;
+        vmd->nt_prstatus_percpu[idx] = cache[idx].precpu_cache;
+        cache[idx].precpu_cache = 0;
         cache[idx].is_set = 0;
+#ifdef ARM64
+        if (cache[idx].panic_cache)
+            BCOPY(cache[idx].panic_cache, &machdep->machspec->panic_task_regs[idx], sizeof(struct arm64_pt_regs));
+        else
+            BZERO(&machdep->machspec->panic_task_regs[idx], sizeof(struct arm64_pt_regs));
+#endif
     }
 }
 
@@ -180,6 +189,11 @@ void parser_cpu_set(char* cmm, int idx, int lv) {
                         memcpy(user_regs + sizeof(ulong) * arm64_reg_sp_maps[lv].position, &addr, sizeof(ulong));
                         break;
                     }
+
+                    if (!strcmp(arm64_reg_sp_maps[lv + 4].regs, regs_name)) {
+                        memcpy(user_regs + sizeof(ulong) * arm64_reg_sp_maps[lv + 4].position, &addr, sizeof(ulong));
+                        break;
+                    }
                 }
             }
         }
@@ -188,11 +202,25 @@ void parser_cpu_set(char* cmm, int idx, int lv) {
         struct cpu_bitmap* cache = get_cpu_cache();
         if (!cache[idx].is_set) {
             cache[idx].is_set = 1;
-            cache[idx].cache = vmd->nt_prstatus_percpu[idx];
+            cache[idx].precpu_cache = vmd->nt_prstatus_percpu[idx];
+#ifdef ARM64
+            if (machdep->machspec->panic_task_regs
+                    && cpu_panic_task_regs_cache != machdep->machspec->panic_task_regs)
+                cache[idx].panic_cache = &machdep->machspec->panic_task_regs[idx];
+#endif
         } else {
             free(vmd->nt_prstatus_percpu[idx]);
             vmd->nt_prstatus_percpu[idx] = 0x0;
         }
+#ifdef ARM64
+        if (!machdep->machspec->panic_task_regs) {
+            machdep->machspec->panic_task_regs = calloc((size_t)kt->cpus, sizeof(struct arm64_pt_regs));
+            memset(machdep->machspec->panic_task_regs, 0x0, (size_t)kt->cpus * sizeof(struct arm64_pt_regs));
+            cpu_panic_task_regs_cache = machdep->machspec->panic_task_regs;
+        }
+        if (machdep->machspec->panic_task_regs)
+            BCOPY(user_regs, &machdep->machspec->panic_task_regs[idx], sizeof(struct arm64_pt_regs));
+#endif
         vmd->nt_prstatus_percpu[idx] = user_data;
     }
 }
@@ -201,6 +229,13 @@ void parser_cpu_cache_clean(void) {
     if (cpu_cache) {
         free(cpu_cache);
         cpu_cache = NULL;
+    }
+    if (cpu_panic_task_regs_cache) {
+        free(cpu_panic_task_regs_cache);
+        cpu_panic_task_regs_cache = NULL;
+#ifdef ARM64
+        machdep->machspec->panic_task_regs = NULL;
+#endif
     }
 }
 
