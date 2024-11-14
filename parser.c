@@ -8,6 +8,7 @@
 #include "pageowner/page_owner.h"
 #include "trace/trace.h"
 #include "cpu/cpu.h"
+#include "time/time.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -59,6 +60,7 @@ struct parser_commands g_parser_commands[] = {
     {"dmabuf", NULL, NULL},
     {"trace", parser_trace_main, parser_trace_usage},
     {"cpu", parser_cpu_main, parser_cpu_usage},
+    {"time", parser_time_main, parser_time_usage},
     {"help", parser_help_main, NULL}
 };
 
@@ -168,6 +170,7 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(binder_transaction_need_reply, "binder_transaction", "need_reply");
     PARSER_MEMBER_OFFSET_INIT(binder_transaction_buffer, "binder_transaction", "buffer");
     PARSER_MEMBER_OFFSET_INIT(binder_transaction_work, "binder_transaction", "work");
+    PARSER_MEMBER_OFFSET_INIT(binder_transaction_start_time, "binder_transaction", "start_time");
     PARSER_MEMBER_OFFSET_INIT(binder_node_debug_id, "binder_node", "debug_id");
     PARSER_MEMBER_OFFSET_INIT(binder_node_work, "binder_node", "work");
     PARSER_MEMBER_OFFSET_INIT(binder_node_ptr, "binder_node", "ptr");
@@ -185,6 +188,12 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(page_owner_tgid, "page_owner", "tgid");
     PARSER_MEMBER_OFFSET_INIT(stack_record_entries, "stack_record", "entries");
     PARSER_MEMBER_OFFSET_INIT(stack_record_size, "stack_record", "size");
+    PARSER_MEMBER_OFFSET_INIT(tk_core_seq, "tk_core", "seq");
+    PARSER_MEMBER_OFFSET_INIT(tk_core_timekeeper, "tk_core", "timekeeper");
+    PARSER_MEMBER_OFFSET_INIT(timekeeper_tkr_mono, "timekeeper", "tkr_mono");
+    PARSER_MEMBER_OFFSET_INIT(tk_read_base_xtime_nsec, "tk_read_base", "xtime_nsec");
+    PARSER_MEMBER_OFFSET_INIT(tk_read_base_base, "tk_read_base", "base");
+    PARSER_MEMBER_OFFSET_INIT(tk_read_base_shift, "tk_read_base", "shift");
 }
 
 static void parser_size_table_init(void) {
@@ -255,6 +264,7 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(binder_transaction_need_reply, "binder_transaction", "need_reply");
     PARSER_MEMBER_SIZE_INIT(binder_transaction_buffer, "binder_transaction", "buffer");
     PARSER_MEMBER_SIZE_INIT(binder_transaction_work, "binder_transaction", "work");
+    PARSER_MEMBER_SIZE_INIT(binder_transaction_start_time, "binder_transaction", "start_time");
     PARSER_MEMBER_SIZE_INIT(binder_node_debug_id, "binder_node", "debug_id");
     PARSER_MEMBER_SIZE_INIT(binder_node_work, "binder_node", "work");
     PARSER_MEMBER_SIZE_INIT(binder_node_ptr, "binder_node", "ptr");
@@ -274,6 +284,13 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(page_owner_pid, "page_owner", "pid");
     PARSER_MEMBER_SIZE_INIT(page_owner_tgid, "page_owner", "tgid");
     PARSER_MEMBER_SIZE_INIT(stack_record_size, "stack_record", "size");
+    PARSER_STRUCT_SIZE_INIT(tk_core, "tk_core");
+    PARSER_MEMBER_SIZE_INIT(tk_core_seq, "tk_core", "seq");
+    PARSER_MEMBER_SIZE_INIT(tk_core_timekeeper, "tk_core", "timekeeper");
+    PARSER_MEMBER_SIZE_INIT(timekeeper_tkr_mono, "timekeeper", "tkr_mono");
+    PARSER_MEMBER_SIZE_INIT(tk_read_base_xtime_nsec, "tk_read_base", "xtime_nsec");
+    PARSER_MEMBER_SIZE_INIT(tk_read_base_base, "tk_read_base", "base");
+    PARSER_MEMBER_SIZE_INIT(tk_read_base_shift, "tk_read_base", "shift");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {

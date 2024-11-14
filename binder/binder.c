@@ -49,6 +49,9 @@ void parser_binder_usage(void) {
 }
 
 void parser_binder_proc_show(struct binder_data_t* binder_data) {
+    int i, pid, tgid, cnt;
+    struct list_data ld;
+
     if (!symbol_exists("binder_procs"))
         error(FATAL, "binder_procs doesn't exist in this kernel!\n");
 
@@ -57,22 +60,23 @@ void parser_binder_proc_show(struct binder_data_t* binder_data) {
     ulong first;
     readmem(binder_procs, KVADDR, &first, sizeof(void *), "binder_procs_first", FAULT_ON_ERROR);
 
-    struct list_data ld;
     memset(&ld, 0x0, sizeof(ld));
-
     ld.flags |= LIST_ALLOCATE;
     ld.start = first;
     ld.member_offset = PARSER_OFFSET(binder_proc_proc_node);
     if (empty_list(ld.start)) return;
+    cnt = do_list(&ld);
 
-    int cnt = do_list(&ld);
-    int i;
-    int pid;
+    if (binder_data->tc && binder_data->tc->task)
+        tgid = task_tgid(binder_data->tc->task);
+    else
+        tgid = -1;
+
     for (i = 0; i < cnt; ++i) {
         if (!ld.list_ptr[i]) continue;
         readmem(ld.list_ptr[i] + PARSER_OFFSET(binder_proc_pid), KVADDR,
                 &pid, PARSER_SIZE(binder_proc_pid), "binder_proc_pid", FAULT_ON_ERROR);
-        if (binder_data->dump_all || binder_data->pid == pid) {
+        if (binder_data->dump_all || (binder_data->pid == pid || tgid == pid)) {
             fprintf(fp, "binder proc state:\n");
             parser_binder_print_binder_proc(ld.list_ptr[i]);
         }
@@ -219,14 +223,27 @@ void parser_binder_print_binder_transaction_ilocked(ulong proc, const char* pref
                 &to_thread_pid, PARSER_SIZE(binder_thread_pid), "binder_thread_pid", FAULT_ON_ERROR);
     }
 
-    fprintf(fp, "%s %d: 0x%lx from %d:%d to %d:%d code %x flags %x pri %s:%d r%d",
-            prefix, debug_id, transaction,
-            from ? from_proc_pid : 0,
-            from ? from_pid : 0,
-            to_proc ? to_proc_pid : 0,
-            to_thread ? to_thread_pid : 0,
-            code, flags, convert_sched(priority.sched_policy),
-            priority.prio, need_reply);
+    if (!PARSER_VALID_MEMBER(binder_transaction_start_time))
+        fprintf(fp, "%s %d: 0x%lx from %d:%d to %d:%d code %x flags %x pri %s:%d r%d",
+                prefix, debug_id, transaction,
+                from ? from_proc_pid : 0,
+                from ? from_pid : 0,
+                to_proc ? to_proc_pid : 0,
+                to_thread ? to_thread_pid : 0,
+                code, flags, convert_sched(priority.sched_policy),
+                priority.prio, need_reply);
+    else {
+        ulong start_time = ULONG(binder_transaction_buf + PARSER_OFFSET(binder_transaction_start_time));
+        float start_time_cloc = start_time * 1.0F /1000000 / 1000;
+        fprintf(fp, "%s %d: 0x%lx from %d:%d to %d:%d code %x flags %x pri %s:%d r%d st:[%.6f]",
+                prefix, debug_id, transaction,
+                from ? from_proc_pid : 0,
+                from ? from_pid : 0,
+                to_proc ? to_proc_pid : 0,
+                to_thread ? to_thread_pid : 0,
+                code, flags, convert_sched(priority.sched_policy),
+                priority.prio, need_reply, start_time_cloc);
+    }
 
     if (proc != to_proc) {
         fprintf(fp, "\n");

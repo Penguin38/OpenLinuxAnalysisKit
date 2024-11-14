@@ -28,5 +28,6 @@ add_library(linux-parser SHARED
             binder/binder.c
             pageowner/page_owner.c
             trace/trace.c
-            cpu/cpu.c)
+            cpu/cpu.c
+            time/time.c)
 set_target_properties(linux-parser PROPERTIES PREFIX "")

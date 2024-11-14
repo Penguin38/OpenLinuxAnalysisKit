@@ -86,6 +86,7 @@ struct parser_offset_table {
     long binder_transaction_need_reply;
     long binder_transaction_buffer;
     long binder_transaction_work;
+    long binder_transaction_start_time;
     long binder_node_debug_id;
     long binder_node_work;
     long binder_node_ptr;
@@ -103,6 +104,12 @@ struct parser_offset_table {
     long page_ext_operations_offset;
     long stack_record_entries;
     long stack_record_size;
+    long tk_core_seq;
+    long tk_core_timekeeper;
+    long timekeeper_tkr_mono;
+    long tk_read_base_base;
+    long tk_read_base_xtime_nsec;
+    long tk_read_base_shift;
 
     // zram
     long zram_disksize;
@@ -188,6 +195,7 @@ struct parser_size_table {
     long binder_transaction_need_reply;
     long binder_transaction_buffer;
     long binder_transaction_work;
+    long binder_transaction_start_time;
     long binder_node_debug_id;
     long binder_node_work;
     long binder_node_ptr;
@@ -208,6 +216,13 @@ struct parser_size_table {
     long page_ext_operations_offset;
     long stack_record_entries;
     long stack_record_size;
+    long tk_core;
+    long tk_core_seq;
+    long tk_core_timekeeper;
+    long timekeeper_tkr_mono;
+    long tk_read_base_base;
+    long tk_read_base_xtime_nsec;
+    long tk_read_base_shift;
 
     // zram
     long zram;
