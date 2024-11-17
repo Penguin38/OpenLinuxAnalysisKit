@@ -22,7 +22,8 @@ SHARED OBJECT                           COMMANDS
 ```
 crash> lp help
 core        zram        shmem       binder
-meminfo     page_owner  dmabuf      help
+meminfo     page_owner  dmabuf      trace
+cpu         time        help
 
 crash> lp help core
 Usage: core -p <PID> [--output|-o <FILE_PATH>] [option]
@@ -131,4 +132,9 @@ crash> lp binder -a | grep outgoing
     outgoing transaction 363542574: 0xffffff80f6931500 from 6948:7381 to 1709:3250 code d flags 12 pri SCHED_NORMAL:120 r1
     outgoing transaction 363542463: 0xffffff81439d9d00 from 6948:7456 to 1709:15269 code 6 flags 12 pri SCHED_NORMAL:120 r1
     outgoing transaction 363542516: 0xffffff8092d63900 from 6909:7330 to 1709:2794 code 1e flags 12 pri SCHED_NORMAL:139 r1
+```
+
+```
+crash> lp time
+Current time: [150957.312500]
 ```
