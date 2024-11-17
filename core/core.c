@@ -253,17 +253,19 @@ int parser_core_filter_vma(struct core_data_t* core_data, int index) {
 }
 
 void parser_core_usage(void) {
-    fprintf(fp, "Usage: core -p <PID> [--output|-o <FILE_PATH>] [option]\n");
-    fprintf(fp, "   Option:\n");
-    fprintf(fp, "       --zram: decompress zram page\n");
-    fprintf(fp, "       --shmem: decompress shared memory on zram page\n");
-    fprintf(fp, "       --filter|-f: filter vma flags\n");
-    fprintf(fp, "   Filter Vma:\n");
-    fprintf(fp, "       0x01: filter-special-vma\n");
-    fprintf(fp, "       0x02: filter-file-vma\n");
-    fprintf(fp, "       0x04: filter-shared-vma\n");
-    fprintf(fp, "       0x08: filter-sanitizer-shadow-vma (default)\n");
-    fprintf(fp, "       0x10: filter-non-read-vma (default)\n");
-    fprintf(fp, "   Example:\n");
-    fprintf(fp, "       lp core -p 1 --zram --shmem -f 0x18\n");
+    fprintf(fp, "Usage: lp core [OPTION]\n");
+    fprintf(fp, "Option:\n");
+    fprintf(fp, "        --zram             collect zram page\n");
+    fprintf(fp, "        --shmem            collect shared memory on zram page\n");
+    fprintf(fp, "    -f, --filter <FILTER>  filter vma flags\n");
+    fprintf(fp, "    -o, --output <PATH>    coredump file path\n");
+    fprintf(fp, "    -p, --pid <PID>        set collect coredump process pid\n");
+    fprintf(fp, "Filter Vma:\n");
+    fprintf(fp, "    0x01: filter-special-vma\n");
+    fprintf(fp, "    0x02: filter-file-vma\n");
+    fprintf(fp, "    0x04: filter-shared-vma\n");
+    fprintf(fp, "    0x08: filter-sanitizer-shadow-vma (default)\n");
+    fprintf(fp, "    0x10: filter-non-read-vma (default)\n");
+    fprintf(fp, "Example:\n");
+    fprintf(fp, "    lp core -p 1 --zram --shmem -f 0x18\n");
 }

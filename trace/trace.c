@@ -10,7 +10,7 @@ void parser_trace_main(void) {
 }
 
 void parser_trace_usage(void) {
-    fprintf(fp, "Usage: trace [option] ...\n");
+    fprintf(fp, "Usage: lp trace [OPTION] ...\n");
 }
 
 void parser_trace_init(void) {

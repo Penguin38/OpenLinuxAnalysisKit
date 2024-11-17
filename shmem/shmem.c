@@ -69,10 +69,10 @@ void parser_shmem_main(void) {
 }
 
 void parser_shmem_usage(void) {
-    fprintf(fp, "Usage: shmem [option] ...\n");
-    fprintf(fp, "   Option:\n");
-    fprintf(fp, "       --read|-r <VADDR>: read vaddr memory.\n");
-    fprintf(fp, "       --end|-e <VADDR>: read endvaddr memory.\n");
+    fprintf(fp, "Usage: lp shmem [OPTION] ...\n");
+    fprintf(fp, "Option:\n");
+    fprintf(fp, "    -r, --read <VADDR>   read vaddr memory\n");
+    fprintf(fp, "    -e, --end <VADDR>    read endvaddr memory\n");
 }
 
 int parser_shmem_read_page(ulong vaddr, struct vma_cache_data* vma_cache,

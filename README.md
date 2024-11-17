@@ -26,19 +26,21 @@ meminfo     page_owner  dmabuf      trace
 cpu         time        help
 
 crash> lp help core
-Usage: core -p <PID> [--output|-o <FILE_PATH>] [option]
-   Option:
-       --zram: decompress zram page
-       --shmem: decompress shared memory on zram page
-       --filter|-f: filter vma flags
-   Filter Vma:
-       0x01: filter-special-vma
-       0x02: filter-file-vma
-       0x04: filter-shared-vma
-       0x08: filter-sanitizer-shadow-vma (default)
-       0x10: filter-non-read-vma (default)
-   Example:
-       lp core -p 1 --zram --shmem -f 0x18
+Usage: lp core [OPTION]
+Option:
+        --zram             collect zram page
+        --shmem            collect shared memory on zram page
+    -f, --filter <FILTER>  filter vma flags
+    -o, --output <PATH>    coredump file path
+    -p, --pid <PID>        set collect coredump process pid
+Filter Vma:
+    0x01: filter-special-vma
+    0x02: filter-file-vma
+    0x04: filter-shared-vma
+    0x08: filter-sanitizer-shadow-vma (default)
+    0x10: filter-non-read-vma (default)
+Example:
+    lp core -p 1 --zram --shmem -f 0x18
 ```
 
 # Example

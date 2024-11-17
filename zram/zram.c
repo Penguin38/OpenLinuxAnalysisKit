@@ -130,13 +130,13 @@ void parser_zram_main(void) {
 }
 
 void parser_zram_usage(void) {
-    fprintf(fp, "Usage: zram [option] ...\n");
-    fprintf(fp, "   Option:\n");
-    fprintf(fp, "       --read|-r <VADDR>: read vaddr memory.\n");
-    fprintf(fp, "       --end|-e <VADDR>: read endvaddr memory.\n");
-    fprintf(fp, "       --offset|-o <OFFSET>: read zram page.\n");
-    fprintf(fp, "       --type|-t <TYPE>: zram<TYPE>, def: 0.\n");
-    fprintf(fp, "       --file|-f <FILE>: save zram.bin to file.\n");
+    fprintf(fp, "Usage: lp zram [OPTION] ...\n");
+    fprintf(fp, "Option:\n");
+    fprintf(fp, "    -r, --read <VADDR>     read vaddr memory\n");
+    fprintf(fp, "    -e, --end <VADDR>      read endvaddr memory\n");
+    fprintf(fp, "    -o, --offset <OFFSET>  read zram page\n");
+    fprintf(fp, "    -t, --type <TYPE>      zram<TYPE>, def: 0\n");
+    fprintf(fp, "    -f, --file <FILE>      save zram.bin to file\n");
 }
 
 void parser_zram_init(void) {

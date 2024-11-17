@@ -169,11 +169,11 @@ void parser_page_owner_main(void) {
 }
 
 void parser_page_owner_usage(void) {
-    fprintf(fp, "Usage: page_owner [option] ...\n");
-    fprintf(fp, "   Option:\n");
-    fprintf(fp, "       --page: dump page alloc stack.\n");
-    fprintf(fp, "       --pid: cloc pid pages.\n");
-    fprintf(fp, "       --top|-t: cloc top pages.\n");
+    fprintf(fp, "Usage: lp page_owner [OPTION] ...\n");
+    fprintf(fp, "Option:\n");
+    fprintf(fp, "         --page   dump page alloc stack.\n");
+    fprintf(fp, "         --pid    cloc pid pages.\n");
+    fprintf(fp, "    -t, --top     cloc top pages.\n");
 }
 
 ulong parser_page_ext_get(struct pageowner_data_t* pageowner_data, ulong page, ulong pfn) {

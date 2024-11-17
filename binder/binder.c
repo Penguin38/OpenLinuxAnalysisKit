@@ -42,10 +42,10 @@ void parser_binder_main(void) {
 }
 
 void parser_binder_usage(void) {
-    fprintf(fp, "Usage: binder [option] ...\n");
-    fprintf(fp, "   Option:\n");
-    fprintf(fp, "       --pid|-p <PID>: read target binder info.\n");
-    fprintf(fp, "       --all|-a : read all binder info.\n");
+    fprintf(fp, "Usage: lp binder [OPTION] ...\n");
+    fprintf(fp, "Option:\n");
+    fprintf(fp, "    -p, --pid <PID>  read target binder info\n");
+    fprintf(fp, "    -a, --all        read all binder info\n");
 }
 
 void parser_binder_proc_show(struct binder_data_t* binder_data) {

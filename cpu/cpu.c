@@ -240,10 +240,10 @@ void parser_cpu_cache_clean(void) {
 }
 
 void parser_cpu_usage(void) {
-    fprintf(fp, "Usage: cpu [option] ...\n");
+    fprintf(fp, "Usage: lp cpu [OPTION] ...\n");
     fprintf(fp, "Option:\n");
-    fprintf(fp, "  --cmm <PATH>: core_regs.cmm\n");
-    fprintf(fp, "  --cpu <ID>\n");
-    fprintf(fp, "  --lv <EXC LEVEL>\n");
-    fprintf(fp, "  --reset\n");
+    fprintf(fp, "        --cmm <PATH>      set cpu regs with core_regs.cmm\n");
+    fprintf(fp, "    -c, --cpu <ID>        set target cpu regs\n");
+    fprintf(fp, "    -l, --lv <EXC LEVEL>  set cpu exception level\n");
+    fprintf(fp, "    -r, --reset           clean extend cpu regs\n");
 }

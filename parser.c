@@ -99,7 +99,7 @@ char *help_parser[] = {
     "linux-parser",
     "Base on crash-utility project, apply analysis Linux kernel core.",
     "[COMMAND] ...",
-    "  linux-parser version 1.0.1",
+    "  linux-parser version 1.0.1++",
     "  Command: [core, ...]",
 	"Exp:",
 	"crash> lp [COMMAND] [OPTION]",
