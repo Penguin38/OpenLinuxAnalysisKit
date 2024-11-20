@@ -320,7 +320,7 @@ const char* convert_sched(int i) {
 
 int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache) {
     int vma_count = 0;
-    ulong tmp, vma, vm_next, mm_mt, entry_num;
+    ulong tmp, vma, vm_next, mm_mt, entry_num, vm_mm;
     char *vma_buf;
     struct list_pair *entry_list;
     struct task_mem_usage task_mem_usage, *tm;
@@ -339,7 +339,12 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
             int index;
             for (index = 0; index < entry_num; index++) {
                 tmp = (ulong)entry_list[index].value;
-                if (!tmp) continue;
+                if (!tmp || !IS_KVADDR(tmp))
+                    continue;
+                readmem(tmp + PARSER_OFFSET(vm_area_struct_vm_mm), KVADDR,
+                        &vm_mm, sizeof(void *), "vm_area_struct vm_mm", FAULT_ON_ERROR);
+                if (!IS_KVADDR(vm_mm) || tm->mm_struct_addr != vm_mm)
+                    continue;
                 vma_count++;
             }
 
@@ -353,8 +358,12 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
             int idx = 0;
             for (index = 0; index < entry_num; index++) {
                 tmp = (ulong)entry_list[index].value;
-                if (!tmp) continue;
+                if (!tmp || !IS_KVADDR(tmp))
+                    continue;
                 vma_buf = fill_vma_cache(tmp);
+                vm_mm = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_mm));
+                if (!IS_KVADDR(vm_mm) || tm->mm_struct_addr != vm_mm)
+                    continue;
                 (*vma_cache)[idx].vm_start = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_start));
                 (*vma_cache)[idx].vm_end = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_end));
                 (*vma_cache)[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));
