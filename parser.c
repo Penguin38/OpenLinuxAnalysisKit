@@ -333,7 +333,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
         mm_mt = tm->mm_struct_addr + PARSER_OFFSET(mm_struct_mm_mt);
         entry_num = do_maple_tree(mm_mt, MAPLE_TREE_COUNT, NULL);
         if (entry_num) {
-            entry_list = (struct list_pair *)GETBUF(entry_num * sizeof(struct list_pair));
+            entry_list = (struct list_pair *)malloc(entry_num * sizeof(struct list_pair));
             do_maple_tree(mm_mt, MAPLE_TREE_GATHER, entry_list);
 
             int index;
@@ -374,7 +374,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
                 (*vma_cache)[idx].vm_mm = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_mm));
                 idx++;
             }
-            FREEBUF(entry_list);
+            free(entry_list);
         }
     } else {
         readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_mmap), KVADDR,

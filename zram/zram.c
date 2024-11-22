@@ -192,7 +192,7 @@ void parser_zram_init(void) {
 
         for (int i = 0; i < zram_total; ++i) {
             if (!zram_data_cache[i].zram) continue;
-            fill_zram_buf = (unsigned char *)GETBUF(PARSER_SIZE(zram));
+            fill_zram_buf = (unsigned char *)malloc(PARSER_SIZE(zram));
             BZERO(fill_zram_buf, PARSER_SIZE(zram));
             readmem(zram_data_cache[i].zram, KVADDR, fill_zram_buf, PARSER_SIZE(zram), "fill_zram_buf", FAULT_ON_ERROR);
             if (!PARSER_VALID_MEMBER(zram_comps)) {
@@ -206,7 +206,7 @@ void parser_zram_init(void) {
             }
             zram_data_cache[i].table = ULONG(fill_zram_buf + PARSER_OFFSET(zram_table));
             zram_data_cache[i].mem_pool = ULONG(fill_zram_buf + PARSER_OFFSET(zram_mem_pool));
-            FREEBUF(fill_zram_buf);
+            free(fill_zram_buf);
 
             // crypto decompress
             for (int k = 0; k < zram_data_cache[i].comp_count; k++) {
@@ -273,7 +273,7 @@ void parser_zram_data_init(void) {
         readmem(swap_info_ptr + i * sizeof(void *), KVADDR,
                 &swap_info, sizeof(void *), "swap_info_struct", FAULT_ON_ERROR);
 
-        swap_info_buf = (unsigned char *)GETBUF(PARSER_SIZE(swap_info_struct));
+        swap_info_buf = (unsigned char *)malloc(PARSER_SIZE(swap_info_struct));
         readmem(swap_info, KVADDR, swap_info_buf, PARSER_SIZE(swap_info_struct), "swap_info_buf", FAULT_ON_ERROR);
         swap_file = ULONG(swap_info_buf + PARSER_OFFSET(swap_info_struct_swap_file));
         zram_data_cache[i].pages = UINT(swap_info_buf + PARSER_OFFSET(swap_info_struct_pages));
@@ -311,7 +311,7 @@ void parser_zram_data_init(void) {
         readmem(bd_disk + PARSER_OFFSET(gendisk_private_data), KVADDR,
                 &zram_data_cache[i].zram, PARSER_SIZE(gendisk_private_data), "gendisk_private_data", FAULT_ON_ERROR);
 
-        FREEBUF(swap_info_buf);
+        free(swap_info_buf);
     }
 }
 

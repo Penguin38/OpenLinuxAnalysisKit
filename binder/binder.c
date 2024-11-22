@@ -86,7 +86,7 @@ void parser_binder_proc_show(struct binder_data_t* binder_data) {
 
 void parser_binder_print_binder_proc(ulong proc) {
     unsigned char *binder_proc_buf = NULL;
-    binder_proc_buf = (unsigned char *)GETBUF(PARSER_SIZE(binder_proc));
+    binder_proc_buf = (unsigned char *)malloc(PARSER_SIZE(binder_proc));
     readmem(proc, KVADDR, binder_proc_buf, PARSER_SIZE(binder_proc), "binder_proc", FAULT_ON_ERROR);
     ulong context = ULONG(binder_proc_buf + PARSER_OFFSET(binder_proc_context));
     ulong threads = ULONG(binder_proc_buf + PARSER_OFFSET(binder_proc_threads));
@@ -110,7 +110,7 @@ void parser_binder_print_binder_proc(ulong proc) {
     hq_open();
     cnt = do_rbtree(&td);
     if (cnt) {
-        list_ptr = (ulong *)GETBUF(cnt * sizeof(void *));
+        list_ptr = (ulong *)malloc(cnt * sizeof(void *));
         BZERO(list_ptr, cnt * sizeof(void *));
         retrieve_list(list_ptr, cnt);
 
@@ -118,7 +118,7 @@ void parser_binder_print_binder_proc(ulong proc) {
             if (!list_ptr[i]) continue;
             parser_binder_print_binder_thread_ilocked(list_ptr[i] - td.node_member_offset);
         }
-        FREEBUF(list_ptr);
+        free(list_ptr);
     }
     hq_close();
 
@@ -127,7 +127,7 @@ void parser_binder_print_binder_proc(ulong proc) {
     ld.flags |= LIST_ALLOCATE | LIST_HEAD_POINTER;
     ld.start = todo;
     if (empty_list(ld.start)) {
-        FREEBUF(binder_proc_buf);
+        free(binder_proc_buf);
         fprintf(fp, "\n");
         return;
     }
@@ -137,13 +137,13 @@ void parser_binder_print_binder_proc(ulong proc) {
         parser_binder_print_binder_work_ilocked(proc, "    ", "    pending transaction", ld.list_ptr[i]);
     }
     FREEBUF(ld.list_ptr);
-    FREEBUF(binder_proc_buf);
+    free(binder_proc_buf);
     fprintf(fp, "\n");
 }
 
 void parser_binder_print_binder_thread_ilocked(ulong thread) {
     unsigned char *binder_thread_buf = NULL;
-    binder_thread_buf = (unsigned char *)GETBUF(PARSER_SIZE(binder_thread));
+    binder_thread_buf = (unsigned char *)malloc(PARSER_SIZE(binder_thread));
     readmem(thread, KVADDR, binder_thread_buf, PARSER_SIZE(binder_thread), "binder_thread", FAULT_ON_ERROR);
 
     int pid = UINT(binder_thread_buf + PARSER_OFFSET(binder_thread_pid));
@@ -180,12 +180,12 @@ void parser_binder_print_binder_thread_ilocked(ulong thread) {
             t = 0x0;
         }
     }
-    FREEBUF(binder_thread_buf);
+    free(binder_thread_buf);
 }
 
 void parser_binder_print_binder_transaction_ilocked(ulong proc, const char* prefix, ulong transaction) {
     unsigned char *binder_transaction_buf = NULL;
-    binder_transaction_buf = (unsigned char *)GETBUF(PARSER_SIZE(binder_transaction));
+    binder_transaction_buf = (unsigned char *)malloc(PARSER_SIZE(binder_transaction));
     readmem(transaction, KVADDR, binder_transaction_buf, PARSER_SIZE(binder_transaction), "binder_transaction", FAULT_ON_ERROR);
 
     int debug_id = INT(binder_transaction_buf + PARSER_OFFSET(binder_transaction_debug_id));
@@ -247,14 +247,14 @@ void parser_binder_print_binder_transaction_ilocked(ulong proc, const char* pref
 
     if (proc != to_proc) {
         fprintf(fp, "\n");
-        FREEBUF(binder_transaction_buf);
+        free(binder_transaction_buf);
         return;
     }
 
     ulong buffer = ULONG(binder_transaction_buf + PARSER_OFFSET(binder_transaction_buffer));
     if (!buffer) {
         fprintf(fp, " buffer free\n");
-        FREEBUF(binder_transaction_buf);
+        free(binder_transaction_buf);
         return;
     }
 
@@ -271,7 +271,7 @@ void parser_binder_print_binder_transaction_ilocked(ulong proc, const char* pref
     fprintf(fp, " size %zd:%zd data %p\n",
             b_buf.data_size, b_buf.offsets_size, b_buf.user_data);
 
-    FREEBUF(binder_transaction_buf);
+    free(binder_transaction_buf);
 }
 
 void parser_binder_print_binder_work_ilocked(ulong proc, const char* prefix, const char* transaction_prefix, ulong work) {
