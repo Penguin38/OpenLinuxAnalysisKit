@@ -42,6 +42,7 @@ struct parser_offset_table {
     long vm_area_struct_anon_name;
     long vm_area_struct_anon_vma;
     long vm_area_struct_vm_mm;
+    long vm_area_struct_detached;
     long task_struct_flags;
     long task_struct_thread;
     long thread_struct_sctlr_user;
@@ -147,6 +148,7 @@ struct parser_size_table {
     long vm_area_struct_anon_name;
     long vm_area_struct_anon_vma;
     long vm_area_struct_vm_mm;
+    long vm_area_struct_detached;
     long task_struct_flags;
     long task_struct_thread;
     long thread_struct_sctlr_user;

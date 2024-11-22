@@ -136,16 +136,20 @@ int parser_shmem_get_page_cache(struct vma_cache_data* vma_cache,
         root_rnode = i_mapping + PARSER_OFFSET(address_space_i_pages);
 
     if (root_rnode) {
-        count = do_radix_tree(root_rnode, RADIX_TREE_COUNT, NULL);
-        if (count) {
-            *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
-            do_radix_tree(root_rnode, RADIX_TREE_GATHER, *page_list);
+        if (IS_KVADDR(root_rnode)) {
+            count = do_radix_tree(root_rnode, RADIX_TREE_COUNT, NULL);
+            if (count) {
+                *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
+                do_radix_tree(root_rnode, RADIX_TREE_GATHER, *page_list);
+            }
         }
     } else {
-        count = do_xarray(xarray, XARRAY_COUNT, NULL);
-        if (count) {
-            *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
-            do_xarray(xarray, XARRAY_GATHER, *page_list);
+        if (IS_KVADDR(xarray)) {
+            count = do_xarray(xarray, XARRAY_COUNT, NULL);
+            if (count) {
+                *page_list = (struct list_pair *)malloc(sizeof(struct list_pair) * count);
+                do_xarray(xarray, XARRAY_GATHER, *page_list);
+            }
         }
     }
     return count;

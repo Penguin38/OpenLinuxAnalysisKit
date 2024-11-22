@@ -127,6 +127,7 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_anon_name, "vm_area_struct", "anon_name");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_anon_vma, "vm_area_struct", "anon_vma");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_mm, "vm_area_struct", "vm_mm");
+    PARSER_MEMBER_OFFSET_INIT(vm_area_struct_detached, "vm_area_struct", "detached");
     PARSER_MEMBER_OFFSET_INIT(task_struct_flags, "task_struct", "flags");
     PARSER_MEMBER_OFFSET_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_OFFSET_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
@@ -217,6 +218,7 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_anon_name, "vm_area_struct", "anon_name");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_anon_vma, "vm_area_struct", "anon_vma");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_mm, "vm_area_struct", "vm_mm");
+    PARSER_MEMBER_SIZE_INIT(vm_area_struct_detached, "vm_area_struct", "detached");
     PARSER_MEMBER_SIZE_INIT(task_struct_flags, "task_struct", "flags");
     PARSER_MEMBER_SIZE_INIT(task_struct_thread, "task_struct", "thread");
     PARSER_MEMBER_SIZE_INIT(thread_struct_sctlr_user, "thread_struct", "sctlr_user");
@@ -324,6 +326,7 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
     char *vma_buf;
     struct list_pair *entry_list;
     struct task_mem_usage task_mem_usage, *tm;
+    bool detached = false;
 
     tm = &task_mem_usage;
     get_task_mem_usage(tc->task, tm);
@@ -343,8 +346,18 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
                     continue;
                 readmem(tmp + PARSER_OFFSET(vm_area_struct_vm_mm), KVADDR,
                         &vm_mm, sizeof(void *), "vm_area_struct vm_mm", FAULT_ON_ERROR);
-                if (!IS_KVADDR(vm_mm) || tm->mm_struct_addr != vm_mm)
+                if (!IS_KVADDR(vm_mm) || tm->mm_struct_addr != vm_mm) {
+                    fprintf(fp, "skip vma %lx, reason vma.vm_mm != task.mm\n", tmp);
                     continue;
+                }
+                if (PARSER_VALID_MEMBER(vm_area_struct_detached)) {
+                    readmem(tmp + PARSER_OFFSET(vm_area_struct_detached), KVADDR,
+                            &detached, 1, "vm_area_struct detached", FAULT_ON_ERROR);
+                    if (detached) {
+                        fprintf(fp, "skip vma %lx, reason detached\n", tmp);
+                        continue;
+                    }
+                }
                 vma_count++;
             }
 
@@ -364,6 +377,11 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
                 vm_mm = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_mm));
                 if (!IS_KVADDR(vm_mm) || tm->mm_struct_addr != vm_mm)
                     continue;
+                if (PARSER_VALID_MEMBER(vm_area_struct_detached)) {
+                    detached = BOOL(vma_buf + PARSER_OFFSET(vm_area_struct_detached));
+                    if (detached)
+                        continue;
+                }
                 (*vma_cache)[idx].vm_start = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_start));
                 (*vma_cache)[idx].vm_end = ULONG(vma_buf + PARSER_OFFSET(vm_area_struct_vm_end));
                 (*vma_cache)[idx].vm_flags = ULONG(vma_buf+ PARSER_OFFSET(vm_area_struct_vm_flags));

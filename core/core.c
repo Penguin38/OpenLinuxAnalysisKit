@@ -160,11 +160,11 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
         BZERO(anon, BUFSIZE);
         dentry = vfsmnt = 0;
 
-        if (core_data->vma_cache[index].vm_file) {
+        if (IS_KVADDR(core_data->vma_cache[index].vm_file)) {
             file_buf = fill_file_cache(core_data->vma_cache[index].vm_file);
             dentry = ULONG(file_buf + OFFSET(file_f_dentry));
 
-            if (dentry) {
+            if (IS_KVADDR(dentry)) {
                 if (VALID_MEMBER(file_f_vfsmnt)) {
                     vfsmnt = ULONG(file_buf + OFFSET(file_f_vfsmnt));
                     get_pathname(dentry, core_data->vma_cache[index].buf, BUFSIZE, 1, vfsmnt);
@@ -174,8 +174,9 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
 
         } else if (core_data->vma_cache[index].anon_name) {
             if (PARSER_VALID_MEMBER(anon_vma_name_name)) {
-                readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
-                        anon, BUFSIZE, "anon_name", core_data->error_handle);
+                if (IS_KVADDR(core_data->vma_cache[index].anon_name))
+                    readmem(core_data->vma_cache[index].anon_name + PARSER_OFFSET(anon_vma_name_name), KVADDR,
+                            anon, BUFSIZE, "anon_name", core_data->error_handle);
             } else if (IS_KVADDR(core_data->vma_cache[index].anon_name)) {
                 readmem(core_data->vma_cache[index].anon_name, KVADDR,
                         anon, BUFSIZE, "anon_name", core_data->error_handle);
