@@ -227,7 +227,8 @@ int parser_core_filter_vma(struct core_data_t* core_data, int index) {
     }
 
     if (core_data->filter_flags & FILTER_FILE_VMA) {
-        if (!core_data->vma_cache[index].anon_vma)
+        if (!core_data->vma_cache[index].anon_vma
+                && core_data->vma_cache[index].vm_file)
             return 1;
     }
 
