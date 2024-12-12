@@ -8,7 +8,7 @@
 |crash-android | https://github.com/Penguin38/crash-android        |
 |OpenCoreSDK   | https://github.com/Penguin38/OpenCoreSDK          |
 
-#Getting Started
+# Getting Started
 
 ```
 $ ./build.sh
