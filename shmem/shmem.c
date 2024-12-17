@@ -96,6 +96,10 @@ int parser_shmem_read_page(ulong vaddr, struct vma_cache_data* vma_cache,
     ulong i_pages = i_mapping + PARSER_OFFSET(address_space_i_pages);
     struct list_pair lp;
     lp.index = idx;
+
+    if (!IS_KVADDR(i_pages))
+        return 0;
+
     if (do_xarray(i_pages, XARRAY_SEARCH, &lp)) {
         ulong page = (ulong)lp.value;
         if (page & 1) {
