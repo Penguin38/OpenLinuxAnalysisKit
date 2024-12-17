@@ -106,6 +106,9 @@ int parser_zram_read_swap_page_cache(ulong swap_type, ulong zram_offset, unsigne
     ulong xarray;
     ulong root_rnode;
 
+    if (swap_type >= parser_get_swap_total())
+        return 0;
+
     if (!pagecache_data_cache[swap_type].space)
         return 0;
 
@@ -126,18 +129,18 @@ int parser_zram_read_swap_page_cache(ulong swap_type, ulong zram_offset, unsigne
         else
             root_rnode = swp_space + PARSER_OFFSET(address_space_i_pages);
 
-        if (root_rnode)
+        if (IS_KVADDR(root_rnode))
             pagecache_data_cache[swap_type].cache[idx].page_count = do_radix_tree(root_rnode, RADIX_TREE_COUNT, NULL);
-        else
+        else if (IS_KVADDR(xarray))
             pagecache_data_cache[swap_type].cache[idx].page_count = do_xarray(xarray, XARRAY_COUNT, NULL);
 
         if (pagecache_data_cache[swap_type].cache[idx].page_count) {
             pagecache_data_cache[swap_type].cache[idx].pages = (struct list_pair *)malloc(sizeof(struct list_pair) * pagecache_data_cache[swap_type].cache[idx].page_count);
             BZERO(pagecache_data_cache[swap_type].cache[idx].pages, sizeof(struct list_pair) * pagecache_data_cache[swap_type].cache[idx].page_count);
 
-            if (root_rnode)
+            if (IS_KVADDR(root_rnode))
                 do_radix_tree(root_rnode, RADIX_TREE_GATHER, pagecache_data_cache[swap_type].cache[idx].pages);
-            else
+            else if (IS_KVADDR(xarray))
                 do_xarray(xarray, XARRAY_GATHER, pagecache_data_cache[swap_type].cache[idx].pages);
         }
     }
@@ -166,6 +169,9 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     unsigned char *src = NULL;
     unsigned char *zram_buf = NULL;
     unsigned char *entry_buf = NULL;
+
+    if (swap_index >= parser_get_swap_total())
+        return 0;
 
     if (zram_offset > zram_data_cache[swap_index].pages)
         return 0;

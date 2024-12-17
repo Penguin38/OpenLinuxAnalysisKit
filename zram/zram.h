@@ -14,6 +14,7 @@ void parser_zram_data_init(void);
 void parser_zram_data_uninit(void);
 int parser_zram_read_buf(ulong vaddr, unsigned char* value, ulong error_handle);
 int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* value, ulong error_handle);
+int parser_get_swap_total();
 
 struct swap_space_cache_data_t {
     int page_count;

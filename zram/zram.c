@@ -16,6 +16,7 @@ static int zram_total = 0;
 static int zram_ready = 0;
 static int zsmalloc_ready = 0;
 
+int parser_get_swap_total() { return zram_total; }
 void parser_zram_main(void) {
     parser_zram_init();
 
@@ -283,9 +284,11 @@ void parser_zram_data_init(void) {
             readmem(swp_space, KVADDR, &pagecache_data_cache[i].space, sizeof(void *), "swp_spaces", FAULT_ON_ERROR);
             if (pagecache_data_cache[i].space) {
                 pagecache_data_cache[i].cache_count = (zram_data_cache[i].pages + 1)/(1<<SWAP_ADDRESS_SPACE_SHIFT);
-                pagecache_data_cache[i].cache = (struct swap_space_cache_data_t*)malloc(
-                                                pagecache_data_cache[i].cache_count * sizeof(struct swap_space_cache_data_t));
-                BZERO(pagecache_data_cache[i].cache, pagecache_data_cache[i].cache_count * sizeof(struct swap_space_cache_data_t));
+                if (pagecache_data_cache[i].cache_count) {
+                    pagecache_data_cache[i].cache = (struct swap_space_cache_data_t*)malloc(
+                            pagecache_data_cache[i].cache_count * sizeof(struct swap_space_cache_data_t));
+                    BZERO(pagecache_data_cache[i].cache, pagecache_data_cache[i].cache_count * sizeof(struct swap_space_cache_data_t));
+                }
             }
         }
 
