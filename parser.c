@@ -99,10 +99,10 @@ char *help_parser[] = {
     "linux-parser",
     "Base on crash-utility project, apply analysis Linux kernel core.",
     "[COMMAND] ...",
-    "  linux-parser version 1.0.1++",
+    "  linux-parser version 1.0.2, target crash-android version 8.0.6",
     "  Command: [core, ...]",
 	"Exp:",
-	"crash> lp [COMMAND] [OPTION]",
+	"crash> lp [help] [COMMAND] [OPTION]",
 };
 
 struct parser_offset_table parser_offset_table = {0};
