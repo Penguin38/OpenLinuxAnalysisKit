@@ -2268,6 +2268,16 @@ struct offset_table {                    /* stash of commonly-used offsets */
 	long thread_struct_gsbase;
 	long thread_struct_fs;
 	long thread_struct_gs;
+	long task_struct_thread_context_x19;
+	long task_struct_thread_context_x20;
+	long task_struct_thread_context_x21;
+	long task_struct_thread_context_x22;
+	long task_struct_thread_context_x23;
+	long task_struct_thread_context_x24;
+	long task_struct_thread_context_x25;
+	long task_struct_thread_context_x26;
+	long task_struct_thread_context_x27;
+	long task_struct_thread_context_x28;
 };
 
 struct size_table {         /* stash of commonly-used sizes */
@@ -3593,6 +3603,16 @@ struct machine_specific {
 };
 
 struct arm64_stackframe {
+        unsigned long x19;
+        unsigned long x20;
+        unsigned long x21;
+        unsigned long x22;
+        unsigned long x23;
+        unsigned long x24;
+        unsigned long x25;
+        unsigned long x26;
+        unsigned long x27;
+        unsigned long x28;
         unsigned long fp;
         unsigned long sp;
         unsigned long pc;
@@ -5301,8 +5321,8 @@ enum type_code {
   TYPE_CODE_STRUCT,             /* C struct or Pascal record */
   TYPE_CODE_UNION,              /* C union or Pascal variant part */
   TYPE_CODE_ENUM,               /* Enumeration type */
-#if defined(GDB_5_3) || defined(GDB_6_0) || defined(GDB_6_1) || defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2)
-#if defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2)
+#if defined(GDB_5_3) || defined(GDB_6_0) || defined(GDB_6_1) || defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2) || defined(GDB_13_2)
+#if defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2) || defined(GDB_13_2)
   TYPE_CODE_FLAGS,              /* Bit flags type */
 #endif
   TYPE_CODE_FUNC,               /* Function type */
