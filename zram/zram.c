@@ -334,7 +334,7 @@ void parser_zram_data_uninit(void) {
 }
 
 int parser_zram_read_buf(ulong vaddr, unsigned char* value, ulong error_handle) {
-    ulong paddr;
+    physaddr_t paddr;
     ulong zram_offset;
     int swap_type;
 

@@ -1,6 +1,6 @@
 # Copyright (C) 2024-present, Guanyou.Chen. All rights reserved.
 
-export BUILD_TARGET_ABIS="arm64 x86_64"
+export BUILD_TARGET_ABIS="arm x86"
 if [ -z $BUILD_TYPE ];then
     export BUILD_TYPE="Debug"
 fi

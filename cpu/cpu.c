@@ -5,6 +5,7 @@
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
+#include <inttypes.h>
 #include <linux/elf.h>
 
 struct cpu_bitmap {
@@ -174,7 +175,7 @@ void parser_cpu_set(char* cmm, int idx, int lv) {
     FILE *ofp = fopen(cmm, "r");
     if (ofp) {
         while (fgets(line, sizeof(line), ofp)) {
-            sscanf(line, "%s %s %lx", type_name, regs_name, &addr);
+            sscanf(line, "%s %s %" PRIx64 "", type_name, regs_name, &addr);
             regs_name[15] = '\0';
             type_name[15] = '\0';
 

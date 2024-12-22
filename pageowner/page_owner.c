@@ -148,7 +148,7 @@ void parser_page_owner_main(void) {
             if (page_owner_data.pid) {
                 parser_page_owner_top_print(page_owner_data.top[0], page_owner_data.pid);
             } else {
-                ulong last_pages = 0xFFFFFFFFFFFFFFFFULL;
+                ulong last_pages = ~0UL;
                 for (int s = 0; s < page_owner_data.dumptop; ++s) {
                     ulong max_pages = 0;
                     int max_pid = 0;
