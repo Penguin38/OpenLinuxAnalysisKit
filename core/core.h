@@ -57,17 +57,33 @@ struct core_data_t {
 void parser_core_clean(struct core_data_t* core_data);
 void parser_core_fill_vma_name(struct core_data_t* core_data);
 int parser_core_filter_vma(struct core_data_t* core_data, int index);
+
+#if defined(__LP64__)
 void parser_core_dump64(struct core_data_t* core_data);
 void parser_core_dump32(struct core_data_t* core_data);
+#else
+void parser_core_dump32(struct core_data_t* core_data);
+#endif
 
+#if defined(ARM64)
 void parser_arm64_core_prstatus(struct core_data_t* core_data);
 void parser_write_arm64_core_prstatus(struct core_data_t* core_data);
 void parser_arm_core_prstatus(struct core_data_t* core_data);
 void parser_write_arm_core_prstatus(struct core_data_t* core_data);
+#elif defined(ARM)
+void parser_arm_core_prstatus(struct core_data_t* core_data);
+void parser_write_arm_core_prstatus(struct core_data_t* core_data);
+#endif
+
+#if defined(X86_64)
 void parser_x86_64_core_prstatus(struct core_data_t* core_data);
 void parser_write_x86_64_core_prstatus(struct core_data_t* core_data);
 void parser_x86_core_prstatus(struct core_data_t* core_data);
 void parser_write_x86_core_prstatus(struct core_data_t* core_data);
+#elif defined(X86)
+void parser_x86_core_prstatus(struct core_data_t* core_data);
+void parser_write_x86_core_prstatus(struct core_data_t* core_data);
+#endif
 
 typedef struct elf64_auxv {
     uint64_t a_type;

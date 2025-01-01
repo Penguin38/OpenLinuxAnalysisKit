@@ -7,7 +7,9 @@
 #include <string.h>
 
 void parser_core_main(void) {
+#if defined(__LP64__)
     ulong thread_info_flags = 0x0;
+#endif
     unsigned int flags = 0x0;
 
     struct core_data_t core_data;
@@ -81,9 +83,12 @@ void parser_core_main(void) {
             &core_data.mm_brk, PARSER_SIZE(mm_struct_brk), "mm_struct_brk", FAULT_ON_ERROR);
 
     fill_thread_info(core_data.tc->thread_info);
+#if defined(__LP64__)
     thread_info_flags = UINT(tt->thread_info + PARSER_OFFSET(thread_info_flags));
+#endif
 
     if (BITS64()) {
+#if defined(ARM64)
         if (machine_type("ARM64")) {
             if (thread_info_flags & (1 << 22)) { // TIF_32BIT
                 core_data.class = ELFCLASS32;
@@ -99,7 +104,10 @@ void parser_core_main(void) {
                 core_data.parser_core_prstatus = parser_arm64_core_prstatus;
                 core_data.parser_write_core_prstatus = parser_write_arm64_core_prstatus;
             }
-        } else if (machine_type("X86_64")) {
+        }
+#endif
+#if defined(X86_64)
+        if (machine_type("X86_64")) {
             if (thread_info_flags & (1 << 29)) { // TIF_ADDR32
                 core_data.class = ELFCLASS32;
                 core_data.machine = EM_386;
@@ -114,25 +122,27 @@ void parser_core_main(void) {
                 core_data.parser_core_prstatus = parser_x86_64_core_prstatus;
                 core_data.parser_write_core_prstatus = parser_write_x86_64_core_prstatus;
             }
-        } else {
-            fprintf(fp, "Not support machine %s\n", MACHINE_TYPE);
         }
+#endif
     } else {
+#if defined(ARM)
         if (machine_type("ARM")) {
             core_data.class = ELFCLASS32;
             core_data.machine = EM_ARM;
             core_data.parser_core_dump = parser_core_dump32;
             core_data.parser_core_prstatus = parser_arm_core_prstatus;
             core_data.parser_write_core_prstatus = parser_write_arm_core_prstatus;
-        } else if (machine_type("X86")) {
+        }
+#endif
+#if defined(X86)
+        if (machine_type("X86")) {
             core_data.class = ELFCLASS32;
             core_data.machine = EM_386;
             core_data.parser_core_dump = parser_core_dump32;
             core_data.parser_core_prstatus = parser_x86_core_prstatus;
             core_data.parser_write_core_prstatus = parser_write_x86_core_prstatus;
-        } else {
-            fprintf(fp, "Not support machine %s\n", MACHINE_TYPE);
         }
+#endif
     }
     core_data.clean = parser_core_clean;
     core_data.fill_vma_name = parser_core_fill_vma_name;

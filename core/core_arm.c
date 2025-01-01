@@ -55,7 +55,7 @@ void parser_arm_core_prstatus(struct core_data_t* core_data) {
             prstatus[cur].pr_pid = tc->pid;
 
             if (!core_data->compat) {
-                readmem(machdep->get_stacktop(tc->task) - PARSER_SIZE(pt_regs), KVADDR,
+                readmem(machdep->get_stacktop(tc->task) - align_up(PARSER_SIZE(pt_regs), 0x10), KVADDR,
                         &prstatus[cur].pr_reg, sizeof(struct pt_regs), "gpr_get: user_pt_regs",
                         core_data->error_handle);
             } else {
