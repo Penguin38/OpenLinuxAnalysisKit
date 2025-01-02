@@ -23,7 +23,7 @@ jobs:
         bash build.sh
         sudo apt-get install -y libc6-dev-i386
         bash build_32.sh
-        tar -czvf linux-parser_1.0.2.tar.gz output/arm64/linux-parser.so \
+        tar -czvf linux-parser_1.0.3.tar.gz output/arm64/linux-parser.so \
                                             output/x86_64/linux-parser.so \
                                             output/arm/linux-parser.so \
                                             output/x86/linux-parser.so
@@ -31,5 +31,5 @@ jobs:
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3
       with:
-        name: linux-parser_1.0.2.tar.gz
-        path: linux-parser_1.0.2.tar.gz
+        name: linux-parser_1.0.3.tar.gz
+        path: linux-parser_1.0.3.tar.gz

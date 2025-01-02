@@ -93,6 +93,10 @@ void parser_cpu_main(void) {
     if (cpu_idx < 0)
         error(FATAL, "cpu id not set!\n");
 
+    struct vmcore_data *vmd = get_kdump_vmcore_data();
+    if (!vmd || !vmd->num_prstatus_notes)
+        error(FATAL, "this dump not set prs!\n");
+
     if (!machine_type("ARM64"))
         error(FATAL, "Only support machine arm64.\n");
 
