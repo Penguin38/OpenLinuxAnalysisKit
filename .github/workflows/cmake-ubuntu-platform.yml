@@ -1,0 +1,35 @@
+# This starter workflow is for a CMake project running on a single platform. There is a different starter workflow if you need cross-platform coverage.
+# See: https://github.com/actions/starter-workflows/blob/main/ci/cmake-multi-platform.yml
+name: CMake on ubuntu platforms
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  BUILD_TYPE: Debug
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build
+      run: |
+        bash build.sh
+        sudo apt-get install -y libc6-dev-i386
+        bash build_32.sh
+        tar -czvf linux-parser_1.0.2.tar.gz output/arm64/linux-parser.so \
+                                            output/x86_64/linux-parser.so \
+                                            output/arm/linux-parser.so \
+                                            output/x86/linux-parser.so
+
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: linux-parser_1.0.2.tar.gz
+        path: linux-parser_1.0.2.tar.gz
