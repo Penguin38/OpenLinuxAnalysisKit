@@ -26,6 +26,7 @@ if (CMAKE_BUILD_TARGET_ARCH STREQUAL "arm64")
 add_definitions(-D__LP64__)
 list(APPEND LINUX_PARSER_SOURCES
             core/core64.c
+            core/core32.c
             core/core_arm64.c
             core/core_arm.c)
 elseif(CMAKE_BUILD_TARGET_ARCH STREQUAL "arm")
@@ -38,6 +39,7 @@ elseif(CMAKE_BUILD_TARGET_ARCH STREQUAL "x86_64")
 add_definitions(-D__LP64__)
 list(APPEND LINUX_PARSER_SOURCES
             core/core64.c
+            core/core32.c
             core/core_x86_64.c
             core/core_x86.c)
 elseif(CMAKE_BUILD_TARGET_ARCH STREQUAL "x86")
