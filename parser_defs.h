@@ -24,6 +24,8 @@
 #define VM_MAYEXEC  0x00000040
 #define VM_MAYSHARE 0x00000080
 
+#define ANON_BUFSIZE (1024)
+
 struct parser_offset_table {
     long mm_struct_saved_auxv;
     long mm_struct_task_size;
