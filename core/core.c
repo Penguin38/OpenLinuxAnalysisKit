@@ -144,6 +144,10 @@ void parser_core_main(void) {
         }
 #endif
     }
+    core_data.page_size = PAGESIZE();
+    core_data.align_size = 4096;
+    core_data.page_buf = (unsigned char *)malloc(core_data.page_size);
+    core_data.zero_buf = (unsigned char *)malloc(core_data.align_size);
     core_data.clean = parser_core_clean;
     core_data.fill_vma_name = parser_core_fill_vma_name;
     core_data.filter_vma = parser_core_filter_vma;
@@ -156,6 +160,8 @@ void parser_core_clean(struct core_data_t* core_data) {
     if (core_data->prstatus_cache) free(core_data->prstatus_cache);
     if (core_data->auxv_cache) free(core_data->auxv_cache);
     if (core_data->load_cache) free(core_data->load_cache);
+    if (core_data->zero_buf) free(core_data->zero_buf);
+    if (core_data->page_buf) free(core_data->page_buf);
 }
 
 void parser_core_fill_vma_name(struct core_data_t* core_data) {
@@ -163,7 +169,6 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
     char anon[ANON_BUFSIZE];
     ulong dentry, vfsmnt;
     physaddr_t paddr;
-    unsigned char page_buf[4096];
 
     for (int index = 0; index < core_data->vma_count; ++index) {
         file_buf = NULL;
@@ -191,18 +196,18 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
                 readmem(core_data->vma_cache[index].anon_name, KVADDR,
                         anon, ANON_BUFSIZE, "anon_name", core_data->error_handle);
             } else {
-#ifdef ARM64
-                core_data->vma_cache[index].anon_name &= ((1ULL << machdep->machspec->VA_BITS_ACTUAL) - 1);
+#if defined(__LP64__)
+                core_data->vma_cache[index].anon_name &= (USERSPACE_TOP - 1);
 #endif
                 int count = 2;
                 uint64_t anon_buf_off = 0;
                 uint64_t anon_buf_use = ANON_BUFSIZE - 1;
                 do {
-                    memset(&page_buf, 0x0, sizeof(page_buf));
+                    memset(core_data->page_buf, 0x0, core_data->page_size);
                     paddr = (physaddr_t)0x0;
                     int page_exist = uvtop(core_data->tc, core_data->vma_cache[index].anon_name + anon_buf_off, &paddr, 0);
                     ulong off = PAGEOFFSET(core_data->vma_cache[index].anon_name + anon_buf_off);
-                    uint64_t read_size = (PAGESIZE() - off > anon_buf_use) ? anon_buf_use : (PAGESIZE() - off);
+                    uint64_t read_size = (core_data->page_size - off > anon_buf_use) ? anon_buf_use : (core_data->page_size - off);
 
                     if (paddr) {
                         if (page_exist) {
@@ -210,8 +215,8 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
                         } else if (core_data->parse_zram) {
                             ulong zram_offset = SWP_OFFSET(paddr);
                             ulong swap_type = SWP_TYPE(paddr);
-                            parser_zram_read_page(swap_type, zram_offset, page_buf, core_data->error_handle);
-                            memcpy(&anon[anon_buf_off], page_buf + off, read_size);
+                            parser_zram_read_page(swap_type, zram_offset, core_data->page_buf, core_data->error_handle);
+                            memcpy(&anon[anon_buf_off], core_data->page_buf + off, read_size);
                         }
                     }
 

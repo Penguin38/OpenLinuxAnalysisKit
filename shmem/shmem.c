@@ -33,8 +33,8 @@ void parser_shmem_main(void) {
         }
     }
 
-    unsigned char value[4096];
-    memset(value, 0x0, 4096);
+    unsigned char *value = (unsigned char *)malloc(PAGESIZE());
+    memset(value, 0x0, PAGESIZE());
     int shmem_parse_ret = 0;
     char ascii1[9] = {'.', '.', '.', '.', '.', '.', '.', '.', '\0'};
     char ascii2[9] = {'.', '.', '.', '.', '.', '.', '.', '.', '\0'};

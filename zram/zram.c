@@ -92,8 +92,8 @@ void parser_zram_main(void) {
         return;
     }
 
-    unsigned char value[4096];
-    memset(value, 0x0, 4096);
+    unsigned char *value = (unsigned char *)malloc(PAGESIZE());
+    memset(value, 0x0, PAGESIZE());
     int zram_parse_ret = 0;
     char ascii1[9] = {'.', '.', '.', '.', '.', '.', '.', '.', '\0'};
     char ascii2[9] = {'.', '.', '.', '.', '.', '.', '.', '.', '\0'};
@@ -119,7 +119,7 @@ void parser_zram_main(void) {
         if (output) {
             if (zram_data_cache[swap_type].zram) {
                 for(int i = 0; i < zram_data_cache[swap_type].pages + 1; i++) {
-                    memset(value, 0x0, 4096);
+                    memset(value, 0x0, PAGESIZE());
                     parser_zram_read_page(swap_type, i, value, QUIET);
                     fwrite(value, sizeof(value), 1, output);
                 }

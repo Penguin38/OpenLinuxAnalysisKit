@@ -34,6 +34,7 @@ struct core_data_t {
     int class;
     int machine;
     char compat;  /* 32-bit address space on 64 bits */
+
     FILE* fp;
     int phnum;
     int prnum;
@@ -46,6 +47,11 @@ struct core_data_t {
     int prstatus_sizeof;
     void* auxv_cache;
     int extra_note_filesz;
+    unsigned char* zero_buf;
+    unsigned char* page_buf;
+    int align_size;
+    int page_size;
+
     void (*parser_core_dump)(struct core_data_t* core_data);
     void (*parser_core_prstatus)(struct core_data_t* core_data);
     void (*parser_write_core_prstatus)(struct core_data_t* core_data);

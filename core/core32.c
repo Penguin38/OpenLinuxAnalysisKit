@@ -86,7 +86,7 @@ void parser_core_load_vma32(struct core_data_t* core_data, int index) {
     if (core_data->vma_cache[index].vm_flags & VM_EXEC)
         phdr->p_flags |= PF_X;
 
-    phdr->p_align = PAGESIZE();
+    phdr->p_align = core_data->align_size;
 
     if (!core_data->filter_vma(core_data, index))
         phdr->p_filesz = phdr->p_memsz;
@@ -98,7 +98,7 @@ void parser_write_core_program_headers32(struct core_data_t* core_data, Elf32_Ph
     Elf32_Phdr* prev;
     parser_core_load_vma32(core_data, 0);
     Elf32_Phdr* phdr = &((Elf32_Phdr*)core_data->load_cache)[0];
-    phdr->p_offset = align_up(note->p_offset + note->p_filesz, PAGESIZE());
+    phdr->p_offset = align_up(note->p_offset + note->p_filesz, core_data->align_size);
     fwrite(phdr, sizeof(Elf32_Phdr), 1, core_data->fp);
 
     for (int index = 1; index < core_data->vma_count; ++index) {
@@ -145,7 +145,7 @@ void parser_write_core_file32(struct core_data_t* core_data, Elf32_Phdr *note) {
 
     uint32_t number = core_data->vma_count;
     fwrite(&number, 4, 1, core_data->fp);
-    uint32_t page_size = PAGESIZE();
+    uint32_t page_size = core_data->page_size;
     fwrite(&page_size, 4, 1, core_data->fp);
 
     int index = 0;
@@ -170,16 +170,14 @@ void parser_write_core_file32(struct core_data_t* core_data, Elf32_Phdr *note) {
 }
 
 void parser_core_note_align32(struct core_data_t* core_data, Elf32_Phdr *note) {
-    unsigned char zero[4096];
-    memset(&zero, 0x0, sizeof(zero));
+    memset(core_data->zero_buf, 0x0, core_data->align_size);
     uint32_t align_filesz = note->p_filesz - align_up(core_data->fileslen, 4) + core_data->fileslen;
-    uint32_t offset = align_up(note->p_offset + align_filesz, PAGESIZE());
+    uint32_t offset = align_up(note->p_offset + align_filesz, core_data->align_size);
     uint32_t size = offset - (note->p_offset + align_filesz);
-    fwrite(zero, size, 1, core_data->fp);
+    fwrite(core_data->zero_buf, size, 1, core_data->fp);
 }
 
 void parser_write_core_load32(struct core_data_t* core_data) {
-    unsigned char page_buf[4096];
     physaddr_t paddr;
     uint32_t vaddr;
     int idx, i;
@@ -194,20 +192,20 @@ void parser_write_core_load32(struct core_data_t* core_data) {
         shmem_page_count = 0;
         shmem_page_list = NULL;
 
-        int count = phdr->p_memsz / sizeof(page_buf);
+        int count = phdr->p_memsz / core_data->page_size;
         for (i = 0; i < count; ++i) {
-            memset(&page_buf, 0x0, sizeof(page_buf));
-            vaddr = phdr->p_vaddr + i * sizeof(page_buf);
+            memset(core_data->page_buf, 0x0, core_data->page_size);
+            vaddr = phdr->p_vaddr + i * core_data->page_size;
             paddr = (physaddr_t)0x0;
             int page_exist = uvtop(core_data->tc, vaddr, &paddr, 0);
 
             if (paddr) {
                 if (page_exist) {
-                    readmem(paddr, PHYSADDR, page_buf, sizeof(page_buf), "write load32", QUIET);
+                    readmem(paddr, PHYSADDR, core_data->page_buf, core_data->page_size, "write load32", QUIET);
                 } else if (core_data->parse_zram) {
                     ulong zram_offset = SWP_OFFSET(paddr);
                     ulong swap_type = SWP_TYPE(paddr);
-                    parser_zram_read_page(swap_type, zram_offset, page_buf, QUIET);
+                    parser_zram_read_page(swap_type, zram_offset, core_data->page_buf, QUIET);
                 }
             } else {
                 if (core_data->parse_shmem) {
@@ -217,11 +215,11 @@ void parser_write_core_load32(struct core_data_t* core_data) {
 
                     if (shmem_page_count) {
                         parser_shmem_read_page_cache(vaddr, &core_data->vma_cache[idx], shmem_page_count,
-                                                     shmem_page_list, page_buf, QUIET);
+                                                     shmem_page_list, core_data->page_buf, QUIET);
                     }
                 }
             }
-            fwrite(page_buf, sizeof(page_buf), 1, core_data->fp);
+            fwrite(core_data->page_buf, core_data->page_size, 1, core_data->fp);
         }
         if (shmem_page_list) free(shmem_page_list);
     }
