@@ -125,7 +125,7 @@ void parser_write_arm64_core_pac(struct core_data_t* core_data, int pid) {
     struct task_context *tc = pid_to_context(pid);
     ulong sctlr_user;
     readmem(tc->task + PARSER_OFFSET(task_struct_thread) + PARSER_OFFSET(thread_struct_sctlr_user),
-            KVADDR, &sctlr_user, sizeof(ulong), "sctlr_user", FAULT_ON_ERROR);
+            KVADDR, &sctlr_user, sizeof(ulong), "sctlr_user", core_data->error_handle);
     uint64_t pac_enabled_keys = 0x0;
 
     if (sctlr_user & SCTLR_ELx_ENIA)
@@ -157,7 +157,7 @@ void parser_write_arm64_core_mte(struct core_data_t* core_data, int pid) {
     struct task_context *tc = pid_to_context(pid);
     ulong thread_info_flags = 0x0;
     readmem(tc->thread_info + PARSER_OFFSET(thread_info_flags),
-            KVADDR, &thread_info_flags, sizeof(ulong), "thread_info_flags", FAULT_ON_ERROR);
+            KVADDR, &thread_info_flags, sizeof(ulong), "thread_info_flags", core_data->error_handle);
     uint64_t tagged_addr_ctrl = 0x0;
     if (thread_info_flags & (1 << TIF_TAGGED_ADDR))
         tagged_addr_ctrl |= PR_TAGGED_ADDR_ENABLE;
@@ -165,7 +165,7 @@ void parser_write_arm64_core_mte(struct core_data_t* core_data, int pid) {
     ulong mte_ctrl = -1;
     if (PARSER_VALID_MEMBER(thread_struct_mte_ctrl)) {
         readmem(tc->task + PARSER_OFFSET(task_struct_thread) + PARSER_OFFSET(thread_struct_mte_ctrl),
-                KVADDR, &mte_ctrl, sizeof(ulong), "mte_ctrl", FAULT_ON_ERROR);
+                KVADDR, &mte_ctrl, sizeof(ulong), "mte_ctrl", core_data->error_handle);
 
         ulong incl = (~mte_ctrl >> MTE_CTRL_GCR_USER_EXCL_SHIFT) & MTE_CTRL_GCR_USER_EXCL_MASK;
         tagged_addr_ctrl = incl << PR_MTE_TAG_SHIFT;

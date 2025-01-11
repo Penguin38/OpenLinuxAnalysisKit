@@ -63,7 +63,7 @@ void parser_core_auxv32(struct core_data_t* core_data) {
     tm = &task_mem_usage;
     get_task_mem_usage(core_data->tc->task, tm);
     readmem(tm->mm_struct_addr + PARSER_OFFSET(mm_struct_saved_auxv), KVADDR,
-          core_data->auxv_cache, core_data->auxvnum * sizeof(Elf32_auxv), "mm_struct saved_auxv", FAULT_ON_ERROR);
+          core_data->auxv_cache, core_data->auxvnum * sizeof(Elf32_auxv), "mm_struct saved_auxv", core_data->error_handle);
 }
 
 void parser_core_load_vma32(struct core_data_t* core_data, int index) {
