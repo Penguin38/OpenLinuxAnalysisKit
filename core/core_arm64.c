@@ -184,7 +184,7 @@ void parser_write_arm64_core_prstatus(struct core_data_t* core_data) {
     int CONFIG_ARM64_TAGGED_ADDR_ABI = get_kernel_config("CONFIG_ARM64_TAGGED_ADDR_ABI", NULL);
 
     Elf64_Nhdr nhdr;
-    nhdr.n_namesz = NT_GNU_PROPERTY_TYPE_0;
+    nhdr.n_namesz = NOTE_CORE_NAME_SZ;
     nhdr.n_descsz = core_data->prstatus_sizeof;
     nhdr.n_type = NT_PRSTATUS;
 

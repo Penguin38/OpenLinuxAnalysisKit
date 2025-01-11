@@ -84,7 +84,7 @@ void parser_write_x86_64_core_prstatus(struct core_data_t* core_data) {
     if (!core_data->prnum) return;
 
     Elf64_Nhdr nhdr;
-    nhdr.n_namesz = NT_GNU_PROPERTY_TYPE_0;
+    nhdr.n_namesz = NOTE_CORE_NAME_SZ;
     nhdr.n_descsz = core_data->prstatus_sizeof;
     nhdr.n_type = NT_PRSTATUS;
 
