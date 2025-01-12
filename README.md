@@ -11,7 +11,7 @@
 # Getting Started
 
 ```
-$ ./build.sh
+$ ./script/build.sh
 ```
 
 To load the module's commands to a running crash-8.0.4+ session, enter:
