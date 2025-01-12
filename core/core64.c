@@ -112,7 +112,7 @@ void parser_write_core_program_headers64(struct core_data_t* core_data, Elf64_Ph
 
 void parser_write_core_auxv64(struct core_data_t* core_data) {
     Elf64_Nhdr nhdr;
-    nhdr.n_namesz = NT_GNU_PROPERTY_TYPE_0;
+    nhdr.n_namesz = NOTE_CORE_NAME_SZ;
     nhdr.n_descsz = sizeof(Elf64_auxv) * core_data->auxvnum;
     nhdr.n_type = NT_AUXV;
 

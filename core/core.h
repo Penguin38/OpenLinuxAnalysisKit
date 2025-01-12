@@ -15,6 +15,8 @@ void parser_core_usage(void);
 #define FILTER_SHARED_VMA           (1 << 2)
 #define FILTER_SANITIZER_SHADOW_VMA (1 << 3)
 #define FILTER_NON_READ_VMA         (1 << 4)
+#define FILTER_SIGNAL_CONTEXT       (1 << 5)    // unused
+#define FILTER_MINIDUMP             (1 << 6)    // unused
 
 struct core_data_t {
     // env
