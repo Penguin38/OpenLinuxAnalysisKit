@@ -2278,6 +2278,8 @@ struct offset_table {                    /* stash of commonly-used offsets */
 	long task_struct_thread_context_x26;
 	long task_struct_thread_context_x27;
 	long task_struct_thread_context_x28;
+	long neigh_table_hash_heads;
+	long neighbour_hash;
 };
 
 struct size_table {         /* stash of commonly-used sizes */
@@ -2596,7 +2598,7 @@ DEF_LOADER(bool);
 #define SHORT(ADDR)     LOADER(short) ((char *)(ADDR))
 #define UCHAR(ADDR)     *((unsigned char *)((char *)(ADDR)))
 #define VOID_PTR(ADDR)  ((void *) (LOADER(pointer_t) ((char *)(ADDR))))
-#define BOOL(ADDR)      LOADER(bool) ((char *)(ADDR)))
+#define BOOL(ADDR)      LOADER(bool) ((char *)(ADDR))
 
 #else
 
@@ -5321,8 +5323,8 @@ enum type_code {
   TYPE_CODE_STRUCT,             /* C struct or Pascal record */
   TYPE_CODE_UNION,              /* C union or Pascal variant part */
   TYPE_CODE_ENUM,               /* Enumeration type */
-#if defined(GDB_5_3) || defined(GDB_6_0) || defined(GDB_6_1) || defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2) || defined(GDB_13_2)
-#if defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2) || defined(GDB_13_2)
+#if defined(GDB_5_3) || defined(GDB_6_0) || defined(GDB_6_1) || defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2) || defined(GDB_13_2) || defined(GDB_16_2)
+#if defined(GDB_7_0) || defined(GDB_7_3_1) || defined(GDB_7_6) || defined(GDB_10_2) || defined(GDB_13_2) || defined(GDB_16_2)
   TYPE_CODE_FLAGS,              /* Bit flags type */
 #endif
   TYPE_CODE_FUNC,               /* Function type */
@@ -8114,8 +8116,8 @@ extern unsigned long calc_crc32(unsigned long, unsigned char *, size_t);
 #else
 extern unsigned long gnu_debuglink_crc32 (unsigned long, unsigned char *, size_t);
 #endif
-extern int have_partial_symbols(void); 
-extern int have_full_symbols(void);
+extern int have_partial_symbols(void *);
+extern int have_full_symbols(void *);
 
 #if defined(X86) || defined(X86_64) || defined(IA64)
 #define XEN_HYPERVISOR_ARCH 
