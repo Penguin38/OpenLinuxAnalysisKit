@@ -66,6 +66,7 @@ void parser_cpu_main(void) {
         {"cpu",   required_argument, 0, 'c'},
         {"reset", no_argument,       0, 'r'},
         {"lv",    required_argument, 0, 'l'},
+        {0,       0,                 0,  0 },
     };
 
     while ((opt = getopt_long(argcnt - 1, &args[1], "c:rl:",
