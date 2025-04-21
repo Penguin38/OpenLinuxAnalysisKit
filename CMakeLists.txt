@@ -20,7 +20,8 @@ set(LINUX_PARSER_SOURCES
     pageowner/page_owner.c
     trace/trace.c
     cpu/cpu.c
-    time/time.c)
+    time/time.c
+    cmdline/cmd.c)
 
 if (CMAKE_BUILD_TARGET_ARCH STREQUAL "arm64")
 add_definitions(-D__LP64__)

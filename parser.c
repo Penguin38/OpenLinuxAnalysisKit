@@ -9,6 +9,7 @@
 #include "trace/trace.h"
 #include "cpu/cpu.h"
 #include "time/time.h"
+#include "cmdline/cmd.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -61,6 +62,7 @@ struct parser_commands g_parser_commands[] = {
     {"trace", parser_trace_main, parser_trace_usage},
     {"cpu", parser_cpu_main, parser_cpu_usage},
     {"time", parser_time_main, parser_time_usage},
+    {"cmdline", parser_cmdline_main, parser_cmdline_usage},
     {"help", parser_help_main, NULL}
 };
 
@@ -117,6 +119,8 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(mm_struct_start_stack, "mm_struct", "start_stack");
     PARSER_MEMBER_OFFSET_INIT(mm_struct_start_brk, "mm_struct", "start_brk");
     PARSER_MEMBER_OFFSET_INIT(mm_struct_brk, "mm_struct", "brk");
+    PARSER_MEMBER_OFFSET_INIT(mm_struct_arg_start, "mm_struct", "arg_start");
+    PARSER_MEMBER_OFFSET_INIT(mm_struct_arg_end, "mm_struct", "arg_end");
     PARSER_MEMBER_OFFSET_INIT(thread_info_flags, "thread_info", "flags");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_next, "vm_area_struct", "vm_next");
     PARSER_MEMBER_OFFSET_INIT(vm_area_struct_vm_start, "vm_area_struct", "vm_start");
@@ -208,6 +212,8 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(mm_struct_start_stack, "mm_struct", "start_stack");
     PARSER_MEMBER_SIZE_INIT(mm_struct_start_brk, "mm_struct", "start_brk");
     PARSER_MEMBER_SIZE_INIT(mm_struct_brk, "mm_struct", "brk");
+    PARSER_MEMBER_SIZE_INIT(mm_struct_arg_start, "mm_struct", "arg_start");
+    PARSER_MEMBER_SIZE_INIT(mm_struct_arg_end, "mm_struct", "arg_end");
     PARSER_MEMBER_SIZE_INIT(thread_info_flags, "thread_info", "flags");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_next, "vm_area_struct", "vm_next");
     PARSER_MEMBER_SIZE_INIT(vm_area_struct_vm_start, "vm_area_struct", "vm_start");

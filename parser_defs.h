@@ -34,6 +34,8 @@ struct parser_offset_table {
     long mm_struct_start_stack;
     long mm_struct_start_brk;
     long mm_struct_brk;
+    long mm_struct_arg_start;
+    long mm_struct_arg_end;
     long thread_info_flags;
     long vm_area_struct_vm_next;
     long vm_area_struct_vm_start;
@@ -140,6 +142,8 @@ struct parser_size_table {
     long mm_struct_start_stack;
     long mm_struct_start_brk;
     long mm_struct_brk;
+    long mm_struct_arg_start;
+    long mm_struct_arg_end;
     long thread_info_flags;
     long vm_area_struct_vm_next;
     long vm_area_struct_vm_start;
