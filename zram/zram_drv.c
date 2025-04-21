@@ -133,6 +133,8 @@ int parser_zram_read_swap_page_cache(ulong swap_type, ulong zram_offset, unsigne
             pagecache_data_cache[swap_type].cache[idx].page_count = do_radix_tree(root_rnode, RADIX_TREE_COUNT, NULL);
         else if (IS_KVADDR(xarray))
             pagecache_data_cache[swap_type].cache[idx].page_count = do_xarray(xarray, XARRAY_COUNT, NULL);
+        else
+            return 0;
 
         if (pagecache_data_cache[swap_type].cache[idx].page_count) {
             pagecache_data_cache[swap_type].cache[idx].pages = (struct list_pair *)malloc(sizeof(struct list_pair) * pagecache_data_cache[swap_type].cache[idx].page_count);
@@ -142,6 +144,8 @@ int parser_zram_read_swap_page_cache(ulong swap_type, ulong zram_offset, unsigne
                 do_radix_tree(root_rnode, RADIX_TREE_GATHER, pagecache_data_cache[swap_type].cache[idx].pages);
             else if (IS_KVADDR(xarray))
                 do_xarray(xarray, XARRAY_GATHER, pagecache_data_cache[swap_type].cache[idx].pages);
+            else
+                return 0;
         }
     }
 
