@@ -7,8 +7,6 @@
 #include <string.h>
 
 void parser_cmdline_main(void) {
-    parser_zram_init();
-
     struct task_context *tc = NULL;
     struct task_mem_usage task_mem_usage, *tm;
     ulong arg_start_addr = 0x0;
@@ -82,6 +80,7 @@ void parser_cmdline_main(void) {
             if (page_exist) {
                 readmem(paddr, PHYSADDR, &anon[anon_buf_off], read_size, "read cmdline name", FAULT_ON_ERROR);
             } else if (parse_zram) {
+                parser_zram_init();
                 ulong zram_offset = SWP_OFFSET(paddr);
                 ulong swap_type = SWP_TYPE(paddr);
                 parser_zram_read_page(swap_type, zram_offset, page_buf, FAULT_ON_ERROR);

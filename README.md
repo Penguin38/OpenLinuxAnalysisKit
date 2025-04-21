@@ -14,15 +14,15 @@
 $ ./script/build.sh
 ```
 
-To load the module's commands to a running crash-8.0.4+ session, enter:
+To load the module's commands to a running crash-android 8.0.6+ session, enter:
 
 ```
-crash> extend <path-to>/output/arm64/linux-parser.so
+crash-android> extend <path-to>/output/arm64/linux-parser.so
 ```
 To show the module's commands, enter:
 
 ```
-crash> extend
+crash-android> extend
 SHARED OBJECT                           COMMANDS
 <path-to>/output/arm64/linux-parser.so  lp
 ```
@@ -30,12 +30,12 @@ SHARED OBJECT                           COMMANDS
 # Usage
 
 ```
-crash> lp help
+crash-android> lp help
 core        zram        shmem       binder
 meminfo     page_owner  dmabuf      trace
-cpu         time        help
+cpu         time        cmdline     help
 
-crash> lp help core
+crash-android> lp help core
 Usage: lp core [OPTION]
 Option:
         --zram             collect zram page
@@ -56,15 +56,15 @@ Example:
 # Example
 
 ```
-crash> mod -s zram zram.ko
-crash> mod -s zsmalloc zsmalloc.ko
+crash-android> mod -s zram zram.ko
+crash-android> mod -s zsmalloc zsmalloc.ko
 
-crash> lp core -p 1515 --zram --shmem -f 0x18
+crash-android> lp core -p 1515 --zram --shmem -f 0x18
 Saved [1515.core].
 ```
 
 ```
-crash> vtop 0x12c00100
+crash-android> vtop 0x12c00100
 VIRTUAL     PHYSICAL
 12c00100    (not mapped)
 
@@ -81,7 +81,7 @@ ffffff8160c68e80   12c00000   32c00000 100073
 
 SWAP: /first_stage_ramdisk/dev/block/zram0  OFFSET: 1124887
 
-crash> lp zram -r 0x12c00100 -e 0x12c00200
+crash-android> lp zram -r 0x12c00100 -e 0x12c00200
         12c00100:  0000000000000000 0000000000000000  ................
         12c00110:  0000000000000000 0000000000000000  ................
         12c00120:  0000000000000000 00000000705f0f78  ........x._p....
@@ -101,7 +101,7 @@ crash> lp zram -r 0x12c00100 -e 0x12c00200
 ```
 
 ```
-crash> vtop 98be9000
+crash-android> vtop 98be9000
 VIRTUAL     PHYSICAL
 98be9000    (not mapped)
 
@@ -115,7 +115,7 @@ ffffff8161ccbed0   98be9000   9abe9000 2000000dd memfd:jit-zygote-cache
 
 FILE: memfd:jit-zygote-cache  OFFSET: 2000000
 
-crash> lp shmem -r 98be9000 -e 98be9100
+crash-android> lp shmem -r 98be9000 -e 98be9100
         98be9000:  0000000000000000 00000000000003b3  ................
         98be9010:  0000000000000000 0000000000000000  ................
         98be9020:  0000000000002bd0 000000741ec00000  .+..........t...
@@ -135,7 +135,7 @@ crash> lp shmem -r 98be9000 -e 98be9100
 ```
 
 ```
-crash> lp binder -a | grep outgoing
+crash-android> lp binder -a | grep outgoing
     outgoing transaction 363543018: 0xffffff8170b4a000 from 7417:7417 to 1709:1728 code 18 flags 12 pri SCHED_NORMAL:120 r1
     outgoing transaction 363543023: 0xffffff806b8a9c00 from 7335:7335 to 1709:2599 code 28 flags 12 pri SCHED_NORMAL:120 r1
     outgoing transaction 363542714: 0xffffff8196ae6400 from 7310:7310 to 1709:3784 code 17 flags 12 pri SCHED_NORMAL:120 r1
@@ -147,6 +147,11 @@ crash> lp binder -a | grep outgoing
 ```
 
 ```
-crash> lp time
+crash-android> lp time
 Current time: [150957.312500]
+```
+
+```
+crash-android> lp cmdline -p 1
+/system/bin/init second_stage
 ```
