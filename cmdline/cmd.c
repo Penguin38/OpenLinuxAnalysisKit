@@ -46,7 +46,7 @@ void parser_cmdline_main(void) {
         }
     }
 
-    set_context(tc->task, NO_PID, TRUE);
+    set_context(tc->task, NO_PID, FALSE);
 
     tm = &task_mem_usage;
     get_task_mem_usage(tc->task, tm);
@@ -75,6 +75,8 @@ void parser_cmdline_main(void) {
         int page_exist = uvtop(tc, arg_start_addr + anon_buf_off, &paddr, 0);
         ulong off = PAGEOFFSET(arg_start_addr + anon_buf_off);
         uint64_t read_size = (PAGESIZE() - off > anon_buf_use) ? anon_buf_use : (PAGESIZE() - off);
+        if (!read_size)
+            break;
 
         if (paddr) {
             if (page_exist) {

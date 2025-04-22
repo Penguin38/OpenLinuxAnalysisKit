@@ -336,6 +336,8 @@ int parser_vma_caches(struct task_context *tc, struct vma_cache_data **vma_cache
 
     tm = &task_mem_usage;
     get_task_mem_usage(tc->task, tm);
+    if (!tm->mm_struct_addr)
+        return vma_count;
 
     if (!PARSER_VALID_MEMBER(mm_struct_mmap)
             && PARSER_VALID_MEMBER(mm_struct_mm_mt)) {

@@ -58,7 +58,7 @@ void parser_core_main(void) {
         fprintf(fp, "No such pid: %d\n", core_data.pid);
         return;
     }
-    set_context(core_data.tc->task, NO_PID, TRUE);
+    set_context(core_data.tc->task, NO_PID, FALSE);
 
     readmem(core_data.tc->task + PARSER_OFFSET(task_struct_flags), KVADDR,
             &flags, sizeof(flags), "task_struct flags", FAULT_ON_ERROR);
@@ -208,6 +208,8 @@ void parser_core_fill_vma_name(struct core_data_t* core_data) {
                     int page_exist = uvtop(core_data->tc, core_data->vma_cache[index].anon_name + anon_buf_off, &paddr, 0);
                     ulong off = PAGEOFFSET(core_data->vma_cache[index].anon_name + anon_buf_off);
                     uint64_t read_size = (core_data->page_size - off > anon_buf_use) ? anon_buf_use : (core_data->page_size - off);
+                    if (!read_size)
+                        break;
 
                     if (paddr) {
                         if (page_exist) {
