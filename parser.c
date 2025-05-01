@@ -10,6 +10,7 @@
 #include "cpu/cpu.h"
 #include "time/time.h"
 #include "cmdline/cmd.h"
+#include "user_space_pages/user_space_pages.h"
 #include <linux/types.h>
 #include <string.h>
 #include <elf.h>
@@ -63,6 +64,7 @@ struct parser_commands g_parser_commands[] = {
     {"cpu", parser_cpu_main, parser_cpu_usage},
     {"time", parser_time_main, parser_time_usage},
     {"cmdline", parser_cmdline_main, parser_cmdline_usage},
+    {"user_space_pages", parser_user_space_pages_main, parser_user_space_pages_usage},
     {"help", parser_help_main, NULL}
 };
 
@@ -201,6 +203,12 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(tk_read_base_xtime_nsec, "tk_read_base", "xtime_nsec");
     PARSER_MEMBER_OFFSET_INIT(tk_read_base_base, "tk_read_base", "base");
     PARSER_MEMBER_OFFSET_INIT(tk_read_base_shift, "tk_read_base", "shift");
+    PARSER_MEMBER_OFFSET_INIT(trace_array_array_buffer, "trace_array", "array_buffer");
+    PARSER_MEMBER_OFFSET_INIT(trace_array_buffer_disabled, "trace_array", "buffer_disabled");
+    PARSER_MEMBER_OFFSET_INIT(trace_array_current_trace, "trace_array", "current_trace");
+    PARSER_MEMBER_OFFSET_INIT(array_buffer_buffer, "array_buffer", "buffer");
+    PARSER_MEMBER_OFFSET_INIT(trace_buffer_record_disabled, "trace_buffer", "record_disabled");
+    PARSER_MEMBER_OFFSET_INIT(tracer_name, "tracer", "name");
 }
 
 static void parser_size_table_init(void) {
@@ -301,6 +309,12 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(tk_read_base_xtime_nsec, "tk_read_base", "xtime_nsec");
     PARSER_MEMBER_SIZE_INIT(tk_read_base_base, "tk_read_base", "base");
     PARSER_MEMBER_SIZE_INIT(tk_read_base_shift, "tk_read_base", "shift");
+    PARSER_MEMBER_SIZE_INIT(trace_array_array_buffer, "trace_array", "array_buffer");
+    PARSER_MEMBER_SIZE_INIT(trace_array_buffer_disabled, "trace_array", "buffer_disabled");
+    PARSER_MEMBER_SIZE_INIT(trace_array_current_trace, "trace_array", "current_trace");
+    PARSER_MEMBER_SIZE_INIT(array_buffer_buffer, "array_buffer", "buffer");
+    PARSER_MEMBER_SIZE_INIT(trace_buffer_record_disabled, "trace_buffer", "record_disabled");
+    PARSER_MEMBER_SIZE_INIT(tracer_name, "tracer", "name");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {

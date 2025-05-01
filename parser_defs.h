@@ -115,6 +115,12 @@ struct parser_offset_table {
     long tk_read_base_base;
     long tk_read_base_xtime_nsec;
     long tk_read_base_shift;
+    long trace_array_array_buffer;
+    long trace_array_buffer_disabled;
+    long trace_array_current_trace;
+    long array_buffer_buffer;
+    long trace_buffer_record_disabled;
+    long tracer_name;
 
     // zram
     long zram_disksize;
@@ -231,6 +237,12 @@ struct parser_size_table {
     long tk_read_base_base;
     long tk_read_base_xtime_nsec;
     long tk_read_base_shift;
+    long trace_array_array_buffer;
+    long trace_array_buffer_disabled;
+    long trace_array_current_trace;
+    long array_buffer_buffer;
+    long trace_buffer_record_disabled;
+    long tracer_name;
 
     // zram
     long zram;
