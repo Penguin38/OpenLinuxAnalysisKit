@@ -14,7 +14,7 @@
 $ ./script/build.sh
 ```
 
-To load the module's commands to a running crash-android 8.0.6+ session, enter:
+To load the module's commands to a running crash-android 9.0.0 session, enter:
 
 ```
 crash-android> extend <path-to>/output/arm64/linux-parser.so
@@ -33,7 +33,8 @@ SHARED OBJECT                           COMMANDS
 crash-android> lp help
 core        zram        shmem       binder
 meminfo     page_owner  dmabuf      trace
-cpu         time        cmdline     help
+cpu         time        cmdline     user_space_pages
+help
 
 crash-android> lp help core
 Usage: lp core [OPTION]
