@@ -20,6 +20,11 @@ int parser_get_swap_total() { return zram_total; }
 void parser_zram_main(void) {
     parser_zram_init();
 
+    if (argcnt <= 2) {
+        parser_zram_usage();
+        return;
+    }
+
     int opt;
     int option_index = 0;
     optind = 0; // reset
@@ -138,6 +143,7 @@ void parser_zram_usage(void) {
     fprintf(fp, "    -o, --offset <OFFSET>  read zram page\n");
     fprintf(fp, "    -t, --type <TYPE>      zram<TYPE>, def: 0\n");
     fprintf(fp, "    -f, --file <FILE>      save zram.bin to file\n");
+    fprintf(fp, "    -d, --data             show zram cache data\n");
 }
 
 void parser_zram_init(void) {

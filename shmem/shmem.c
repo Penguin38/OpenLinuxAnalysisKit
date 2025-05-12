@@ -7,6 +7,11 @@
 #include <string.h>
 
 void parser_shmem_main(void) {
+    if (argcnt <= 2) {
+        parser_shmem_usage();
+        return;
+    }
+
     int opt;
     int option_index = 0;
     optind = 0; // reset
