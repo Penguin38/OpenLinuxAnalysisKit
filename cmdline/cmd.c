@@ -6,45 +6,14 @@
 #include <getopt.h>
 #include <string.h>
 
-void parser_cmdline_main(void) {
-    struct task_context *tc = NULL;
+void parser_cmdline_form_context(struct task_context* tc) {
     struct task_mem_usage task_mem_usage, *tm;
     ulong arg_start_addr = 0x0;
     ulong arg_end_addr = 0x0;
     char anon[ANON_BUFSIZE];
     int current_offset = 0;
-    int pid = CURRENT_PID();
     unsigned char* page_buf;
     bool parse_zram = true;
-
-    int opt;
-    int option_index = 0;
-    optind = 0; // reset
-    static struct option long_options[] = {
-        {"task",   required_argument,  0,'t'},
-        {"pid",    required_argument,  0,'p'},
-        {0,         0,                 0, 0 },
-    };
-
-    while ((opt = getopt_long(argcnt - 1, &args[1], "t:p:",
-                long_options, &option_index)) != -1) {
-        switch (opt) {
-            case 'p':
-                pid = atoi(optarg);
-                break;
-            case 't':
-                tc = task_to_context(htol(optarg, FAULT_ON_ERROR, NULL));
-                break;
-        }
-    }
-
-    if (!tc) {
-        tc = pid_to_context(pid);
-        if (!tc) {
-            fprintf(fp, "No such pid: %d\n", pid);
-            return;
-        }
-    }
 
     set_context(tc->task, NO_PID, FALSE);
 
@@ -103,12 +72,65 @@ void parser_cmdline_main(void) {
     anon[ANON_BUFSIZE - 1] = '\0';
     free(page_buf);
 
+    fprintf(fp, "PID: %-8ld ", tc->pid);
     int length = arg_end_addr - arg_start_addr;
     do {
         fprintf(fp, "%s ", &anon[current_offset]);
         current_offset += strlen(&anon[current_offset]) + 1;
     } while (current_offset < length);
     fprintf(fp, "\n");
+
+}
+
+void parser_cmdline_main(void) {
+    struct task_context *tc = NULL;
+    int pid = CURRENT_PID();
+    bool dump_all = false;
+    ulong parent;
+
+    int opt;
+    int option_index = 0;
+    optind = 0; // reset
+    static struct option long_options[] = {
+        {"task",   required_argument,  0,'t'},
+        {"pid",    required_argument,  0,'p'},
+        {"father", no_argument,        0,'f'},
+        {0,        0,                  0, 0 },
+    };
+
+    while ((opt = getopt_long(argcnt - 1, &args[1], "t:p:f",
+                long_options, &option_index)) != -1) {
+        switch (opt) {
+            case 'p':
+                pid = atoi(optarg);
+                break;
+            case 't':
+                tc = task_to_context(htol(optarg, FAULT_ON_ERROR, NULL));
+                break;
+            case 'f':
+                dump_all = true;
+                break;
+        }
+    }
+
+    if (!tc) {
+        tc = pid_to_context(pid);
+        if (!tc) {
+            fprintf(fp, "No such pid: %d\n", pid);
+            return;
+        }
+    }
+
+    if (!dump_all)
+        parser_cmdline_form_context(tc);
+    else {
+        do {
+            parser_cmdline_form_context(tc);
+            readmem(tc->task + OFFSET(task_struct_parent), KVADDR,
+                    &parent, sizeof(void *), "task_struct parent", FAULT_ON_ERROR);
+            tc = task_to_context(parent);
+        } while (tc->pid != 0);
+    }
 }
 
 void parser_cmdline_usage(void) {
@@ -116,4 +138,6 @@ void parser_cmdline_usage(void) {
     fprintf(fp, "Option:\n");
     fprintf(fp, "    -t,  --task   print task_struct cmdline\n");
     fprintf(fp, "    -p,  --pid    print pid cmdline\n");
+    fprintf(fp, "    -f,  --father foreach print pid cmdline\n");
+
 }

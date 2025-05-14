@@ -9,4 +9,6 @@
 void parser_cmdline_main(void);
 void parser_cmdline_usage(void);
 
+void parser_cmdline_form_context(struct task_context* tc);
+
 #endif // CMDLINE_CMD_H_
