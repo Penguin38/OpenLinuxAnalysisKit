@@ -131,7 +131,7 @@ char *help_parser[] = {
     "linux-parser",
     "Base on crash-utility project, apply analysis Linux kernel core.",
     "[COMMAND] ...",
-    "  linux-parser version 1.0.5, target crash-android version 8.0.6",
+    "  linux-parser version 1.0.6, target crash-android version 9.0.0",
     "  Command: [core, ...]",
 	"Exp:",
 	"crash> lp [help] [COMMAND] [OPTION]",

@@ -1090,7 +1090,7 @@ struct machdep_table {
         void (*get_irq_affinity)(int);
         void (*show_interrupts)(int, ulong *);
 	int (*is_page_ptr)(ulong, physaddr_t *);
-	int (*get_current_task_reg)(int, const char *, int, void *);
+	int (*get_current_task_reg)(int, const char *, int, void *, int);
 	int (*is_cpu_prstatus_valid)(int cpu);
 };
 
@@ -2457,6 +2457,7 @@ struct size_table {         /* stash of commonly-used sizes */
 	long fred_frame;
 	long vmap_node;
 	long cpumask_t;
+	long task_struct_exit_state;
 };
 
 struct array_table {
@@ -8340,5 +8341,6 @@ enum ppc64_regnum {
 
 /* crash_target.c */
 extern int gdb_change_thread_context (void);
+extern int gdb_add_substack (int);
 
 #endif /* !GDB_COMMON */
