@@ -21,6 +21,7 @@ void parser_fini(void);
 void cmd_parser(void);
 char *help_parser[];
 void parser_help_main(void);
+void parser_file_main(void);
 
 static void parser_offset_table_init(void);
 static void parser_size_table_init(void);
@@ -65,6 +66,7 @@ struct parser_commands g_parser_commands[] = {
     {"time", parser_time_main, parser_time_usage},
     {"cmdline", parser_cmdline_main, parser_cmdline_usage},
     {"user_space_pages", parser_user_space_pages_main, parser_user_space_pages_usage},
+    {"file", parser_file_main, NULL},
     {"help", parser_help_main, NULL}
 };
 
@@ -79,6 +81,32 @@ void cmd_parser(void) {
             break;
         }
     }
+}
+
+void parser_file_main(void) {
+    if (argcnt < 3) return;
+
+    char *file_buf;
+    char buf[BUFSIZE];
+    ulong dentry, vfsmnt;
+
+    dentry = vfsmnt = 0;
+    ulong pfile = htol(args[2], FAULT_ON_ERROR, NULL);
+
+    if (IS_KVADDR(pfile)) {
+        file_buf = fill_file_cache(pfile);
+        dentry = ULONG(file_buf + OFFSET(file_f_dentry));
+
+        if (IS_KVADDR(dentry)) {
+            if (VALID_MEMBER(file_f_vfsmnt)) {
+                vfsmnt = ULONG(file_buf + OFFSET(file_f_vfsmnt));
+                get_pathname(dentry, buf, BUFSIZE, 1, vfsmnt);
+            } else
+                get_pathname(dentry, buf, BUFSIZE, 1, 0);
+        }
+    }
+    buf[BUFSIZE - 1] = '\0';
+    fprintf(fp, "%s\n", buf);
 }
 
 void parser_help_main(void) {
