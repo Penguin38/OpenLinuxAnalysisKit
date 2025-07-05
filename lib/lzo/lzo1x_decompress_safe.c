@@ -15,6 +15,7 @@
  *  Guanyou.Chen <chenguanyou9338@gmail.com>
  */
 
+#include "defs.h"
 #include "lzo.h"
 #include "lzodefs.h"
 #include <string.h>
@@ -50,6 +51,20 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
 	unsigned char * const op_end = out + *out_len;
 
 	unsigned char bitstream_version;
+
+	static int efficient_unaligned_access = -1;
+
+	if (efficient_unaligned_access == -1) {
+#if defined(ARM) || defined(ARM64) || defined(X86) || defined(X86_64) || defined(PPC) || defined(PPC64) || defined(S390)|| defined(S390X)
+		efficient_unaligned_access = TRUE;
+#else
+		efficient_unaligned_access = FALSE;
+#endif
+
+		if ((kt->ikconfig_flags & IKCONFIG_AVAIL) &&
+				(get_kernel_config("CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS", NULL) == IKCONFIG_Y))
+			efficient_unaligned_access = TRUE;
+	}
 
 	op = out;
 	ip = in;
@@ -94,8 +109,8 @@ int lzo1x_decompress_safe(const unsigned char *in, size_t in_len,
 				}
 				t += 3;
 copy_literal_run:
-#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-				if (likely(HAVE_IP(t + 15) && HAVE_OP(t + 15))) {
+				if (efficient_unaligned_access &&
+						(likely(HAVE_IP(t + 15) && HAVE_OP(t + 15)))) {
 					const unsigned char *ie = ip + t;
 					unsigned char *oe = op + t;
 					do {
@@ -108,9 +123,7 @@ copy_literal_run:
 					} while (ip < ie);
 					ip = ie;
 					op = oe;
-				} else
-#endif
-				{
+				} else {
 					NEED_OP(t);
 					NEED_IP(t + 3);
 					do {
@@ -162,6 +175,7 @@ copy_literal_run:
 				NEED_IP(2);
 			}
 			m_pos = op - 1;
+
 			next = get_unaligned_le16(ip);
 			ip += 2;
 			m_pos -= next >> 2;
@@ -212,8 +226,9 @@ copy_literal_run:
 			}
 		}
 		TEST_LB(m_pos);
-#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-		if (op - m_pos >= 8) {
+
+		if (efficient_unaligned_access &&
+				(op - m_pos >= 8)) {
 			unsigned char *oe = op + t;
 			if (likely(HAVE_OP(t + 15))) {
 				do {
@@ -238,9 +253,7 @@ copy_literal_run:
 					*op++ = *m_pos++;
 				} while (op < oe);
 			}
-		} else
-#endif
-		{
+		} else {
 			unsigned char *oe = op + t;
 			NEED_OP(t);
 			op[0] = m_pos[0];
@@ -254,14 +267,12 @@ copy_literal_run:
 match_next:
 		state = next;
 		t = next;
-#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
-		if (likely(HAVE_IP(6) && HAVE_OP(4))) {
+		if (efficient_unaligned_access &&
+				(likely(HAVE_IP(6) && HAVE_OP(4)))) {
 			COPY4(op, ip);
 			op += t;
 			ip += t;
-		} else
-#endif
-		{
+		} else {
 			NEED_IP(t + 3);
 			NEED_OP(t);
 			while (t > 0) {

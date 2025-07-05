@@ -146,6 +146,15 @@ void parser_zram_usage(void) {
     fprintf(fp, "    -d, --data             show zram cache data\n");
 }
 
+static long parse_zram_pageflags(char* flags, int index, long zram_flag_shift) {
+    long pageflags;
+    if (enumerator_value(flags, &pageflags))
+        ; // do nothing
+    else
+        pageflags = zram_flag_shift + index;
+    return pageflags;
+}
+
 void parser_zram_init(void) {
     // zram.ko
     unsigned char *fill_zram_buf = NULL;
@@ -192,9 +201,9 @@ void parser_zram_init(void) {
             zram_flag_shift = 24;
         }
         PARSER_ZRAM_FLAG_SHIFT = 1 << zram_flag_shift;
-        PARSER_ZRAM_FLAG_SAME_BIT = 1 << (zram_flag_shift + 1);
-        PARSER_ZRAM_FLAG_WB_BIT = 1 << (zram_flag_shift + 2);
-        PARSER_ZRAM_COMP_PRIORITY_BIT1 = zram_flag_shift + 7;
+        PARSER_ZRAM_FLAG_SAME_BIT = 1 << (parse_zram_pageflags("ZRAM_SAME", 1, zram_flag_shift));
+        PARSER_ZRAM_FLAG_WB_BIT = 1 << (parse_zram_pageflags("ZRAM_WB", 2, zram_flag_shift));
+        PARSER_ZRAM_COMP_PRIORITY_BIT1 = parse_zram_pageflags("ZRAM_COMP_PRIORITY_BIT1", 7, zram_flag_shift);
         PARSER_ZRAM_COMP_PRIORITY_MASK = 0x3;
 
         for (int i = 0; i < zram_total; ++i) {

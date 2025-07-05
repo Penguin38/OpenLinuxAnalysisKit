@@ -205,6 +205,11 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     free(entry_buf);
 
     objsize = flags & (PARSER_ZRAM_FLAG_SHIFT - 1);
+
+    // avoid having some idiot make changes that mess up the flags formatting.
+    if (objsize > PAGESIZE())
+        objsize &= (PAGESIZE() - 1);
+
     if (zram_data_cache[swap_index].comp_count > 1)
         prio = (flags >> PARSER_ZRAM_COMP_PRIORITY_BIT1) & PARSER_ZRAM_COMP_PRIORITY_MASK;
 
