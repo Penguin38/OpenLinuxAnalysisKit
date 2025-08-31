@@ -22,6 +22,7 @@ void cmd_parser(void);
 char *help_parser[];
 void parser_help_main(void);
 void parser_file_main(void);
+void parser_ps_main(void);
 
 static void parser_offset_table_init(void);
 static void parser_size_table_init(void);
@@ -66,6 +67,7 @@ struct parser_commands g_parser_commands[] = {
     {"time", parser_time_main, parser_time_usage},
     {"cmdline", parser_cmdline_main, parser_cmdline_usage},
     {"user_space_pages", parser_user_space_pages_main, parser_user_space_pages_usage},
+    {"ps", parser_ps_main, NULL},
     {"file", parser_file_main, NULL},
     {"help", parser_help_main, NULL}
 };
@@ -107,6 +109,13 @@ void parser_file_main(void) {
     }
     buf[BUFSIZE - 1] = '\0';
     fprintf(fp, "%s\n", buf);
+}
+
+void parser_ps_main(void) {
+    int i, cur;
+    struct task_context *tc = FIRST_CONTEXT();
+    for (i = cur = 0; i < RUNNING_TASKS(); i++, tc++)
+        fprintf(fp, "%-5ld %lx  %-16s\n", tc->pid, tc->task, tc->comm);
 }
 
 void parser_help_main(void) {
