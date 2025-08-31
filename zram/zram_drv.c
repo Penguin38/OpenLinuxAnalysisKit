@@ -3,19 +3,28 @@
 #include "zram.h"
 
 void parser_zram_obj_to_location(ulong obj, ulong *page, unsigned int* obj_idx) {
+    ulong THE_OBJ_INDEX_BITS = OBJ_INDEX_BITS;
+    ulong THE_OBJ_INDEX_MASK = OBJ_INDEX_MASK;
+    if (THIS_KERNEL_VERSION >= LINUX(6,12,0)) {
+        THE_OBJ_INDEX_BITS = (BITS_PER_LONG - (52 - PAGESHIFT()));
+        THE_OBJ_INDEX_MASK = ((1 << THE_OBJ_INDEX_BITS) - 1);
+    } else {
+        obj >>= OBJ_TAG_BITS;
+    }
     *page = 0x0;
-    obj >>= OBJ_TAG_BITS;
-    phys_to_page(PTOB(obj >> OBJ_INDEX_BITS), page);
-    *obj_idx = (obj & OBJ_INDEX_MASK);
+    phys_to_page(PTOB(obj >> THE_OBJ_INDEX_BITS), page);
+    *obj_idx = (obj & THE_OBJ_INDEX_MASK);
 }
 
 unsigned char *parser_zram_zs_map_object(ulong pool, ulong handle, unsigned char *zram_buf, ulong error_handle) {
     ulong obj, off, class, page, zspage;
     struct zspage zspage_s;
-    physaddr_t paddr;
+    physaddr_t paddr = 0;
     unsigned int obj_idx, class_idx, size;
-    ulong pages[2], sizes[2];
-    ulong zs_magic;
+    ulong pages[2] = {0, 0};
+    ulong sizes[2] = {0, 0};
+    ulong zs_magic = 0;
+    obj = off = class = page = zspage = 0;
 
     readmem(handle, KVADDR, &obj, sizeof(void *), "zram entry", error_handle);
     parser_zram_obj_to_location(obj, &page, &obj_idx);
@@ -26,7 +35,10 @@ unsigned char *parser_zram_zs_map_object(ulong pool, ulong handle, unsigned char
 
     readmem(zspage, KVADDR, &zspage_s, sizeof(struct zspage), "zspage", error_handle);
     if (PARSER_VALID_MEMBER(zspage_huge)) {
-        if (THIS_KERNEL_VERSION >= LINUX(6,6,0)) {
+        if (THIS_KERNEL_VERSION >= LINUX(6,12,0)) {
+            class_idx = zspage_s.v6_12.class;
+            zs_magic = zspage_s.v6_12.magic;
+        } else if (THIS_KERNEL_VERSION >= LINUX(6,6,0)) {
             class_idx = zspage_s.v6_6.class;
             zs_magic = zspage_s.v6_6.magic;
         } else {
@@ -180,14 +192,14 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     if (zram_offset > zram_data_cache[swap_index].pages)
         return 0;
 
-    ulong outsize;
-    ulong sector;
-    ulong index;
-    ulong entry;
-    ulong flags;
-    ulong objsize;
-    ulong handle;
-    ulong element;
+    ulong outsize = 0;
+    ulong sector = 0;
+    ulong index = 0;
+    ulong entry = 0;
+    ulong flags = 0;
+    ulong objsize = 0;
+    ulong handle = 0;
+    ulong element = 0;
     ulong prio = 0;
 
     sector = zram_offset << (PAGESHIFT() - 9);

@@ -80,13 +80,13 @@ void parser_zram_main(void) {
 
     if (debug_data) {
         for (int i = 0; i < zram_total; ++i) {
-            fprintf(fp, "zram_data_cache[%d].zram: %lx\n", i, zram_data_cache[i].zram);
+            fprintf(fp, "zram_data_cache[%d].zram: 0x%lx\n", i, zram_data_cache[i].zram);
             fprintf(fp, "zram_data_cache[%d].comp_count: %ld\n", i, zram_data_cache[i].comp_count);
             for (int k = 0; k < zram_data_cache[i].comp_count; k++) {
-                fprintf(fp, "zram_data_cache[%d].comp[%d]: %lx\n", i, k, zram_data_cache[i].comp[k]);
+                fprintf(fp, "zram_data_cache[%d].comp[%d]: 0x%lx\n", i, k, zram_data_cache[i].comp[k]);
             }
-            fprintf(fp, "zram_data_cache[%d].pages: %lx\n", i, zram_data_cache[i].pages);
-            fprintf(fp, "pagecache_data_cache[%d].space: %lx\n", i, pagecache_data_cache[i].space);
+            fprintf(fp, "zram_data_cache[%d].pages: 0x%lx\n", i, zram_data_cache[i].pages);
+            fprintf(fp, "pagecache_data_cache[%d].space: 0x%lx\n", i, pagecache_data_cache[i].space);
             fprintf(fp, "pagecache_data_cache[%d].cache_count: %d\n", i, pagecache_data_cache[i].cache_count);
             fprintf(fp, "pagecache_data_cache[%d].cache: %p\n", i, pagecache_data_cache[i].cache);
             for (int j = 0; j < pagecache_data_cache[i].cache_count; ++j) {
@@ -94,6 +94,11 @@ void parser_zram_main(void) {
                 fprintf(fp, "pagecache_data_cache[%d].cache[%d].pages: %p\n", i, j, pagecache_data_cache[i].cache[j].pages);
             }
         }
+        fprintf(fp, "PARSER_ZRAM_FLAG_SHIFT: 0x%lx\n", PARSER_ZRAM_FLAG_SHIFT);
+        fprintf(fp, "PARSER_ZRAM_FLAG_SAME_BIT: 0x%lx\n", PARSER_ZRAM_FLAG_SAME_BIT);
+        fprintf(fp, "PARSER_ZRAM_FLAG_WB_BIT: 0x%lx\n", PARSER_ZRAM_FLAG_WB_BIT);
+        fprintf(fp, "PARSER_ZRAM_COMP_PRIORITY_BIT1: 0x%lx\n", PARSER_ZRAM_COMP_PRIORITY_BIT1);
+        fprintf(fp, "PARSER_ZRAM_COMP_PRIORITY_MASK: 0x%lx\n", PARSER_ZRAM_COMP_PRIORITY_MASK);
         return;
     }
 
@@ -126,7 +131,7 @@ void parser_zram_main(void) {
                 for(int i = 0; i < zram_data_cache[swap_type].pages + 1; i++) {
                     memset(value, 0x0, PAGESIZE());
                     parser_zram_read_page(swap_type, i, value, QUIET);
-                    fwrite(value, sizeof(value), 1, output);
+                    fwrite(value, PAGESIZE(), 1, output);
                 }
                 fprintf(fp, "Saved [%s].\n", filename);
             }
@@ -259,13 +264,14 @@ void parser_zram_data_init(void) {
     ulong swap_info_ptr;
     ulong swap_info;
     ulong swap_file;
-    ulong vfsmnt;
     ulong bdev;
     ulong bd_disk;
     ulong swp_space_ptr = 0x0;
     ulong swp_space;
     int nr_swapfiles;
     char buf[BUFSIZE];
+    char *file_buf = NULL;
+    ulong dentry, vfsmnt;
 
     if (!symbol_exists("nr_swapfiles"))
         error(FATAL, "nr_swapfiles doesn't exist in this kernel!\n");
@@ -285,11 +291,14 @@ void parser_zram_data_init(void) {
     pagecache_data_cache = (struct pagecache_data_t*)malloc(nr_swapfiles * sizeof(struct pagecache_data_t));
     BZERO(pagecache_data_cache, nr_swapfiles * sizeof(struct pagecache_data_t));
     zram_total = nr_swapfiles;
+    swap_info_buf = (unsigned char *)malloc(PARSER_SIZE(swap_info_struct));
     for (int i = 0; i < nr_swapfiles; i++) {
+        file_buf = NULL;
+        dentry = vfsmnt = 0;
+        memset(swap_info_buf, 0x0, PARSER_SIZE(swap_info_struct));
         readmem(swap_info_ptr + i * sizeof(void *), KVADDR,
                 &swap_info, sizeof(void *), "swap_info_struct", FAULT_ON_ERROR);
 
-        swap_info_buf = (unsigned char *)malloc(PARSER_SIZE(swap_info_struct));
         readmem(swap_info, KVADDR, swap_info_buf, PARSER_SIZE(swap_info_struct), "swap_info_buf", FAULT_ON_ERROR);
         swap_file = ULONG(swap_info_buf + PARSER_OFFSET(swap_info_struct_swap_file));
         zram_data_cache[i].pages = UINT(swap_info_buf + PARSER_OFFSET(swap_info_struct_pages));
@@ -308,14 +317,14 @@ void parser_zram_data_init(void) {
         }
 
         if (!swap_file) continue;
-        if (PARSER_VALID_MEMBER(swap_info_struct_swap_vfsmnt)) {
-            readmem(swap_info_ptr + PARSER_OFFSET(swap_info_struct_swap_vfsmnt), KVADDR,
-                    &vfsmnt, PARSER_SIZE(swap_info_struct_swap_vfsmnt), "swap_info_struct_swap_vfsmnt", FAULT_ON_ERROR);
-            get_pathname(swap_file, buf, BUFSIZE, 1, vfsmnt);
-        } else if (PARSER_VALID_MEMBER(swap_info_struct_old_block_size)) {
-            get_pathname(file_to_dentry(swap_file), buf, BUFSIZE, 1, file_to_vfsmnt(swap_file));
-        } else {
-            get_pathname(swap_file, buf, BUFSIZE, 1, 0);
+        file_buf = fill_file_cache(swap_file);
+        dentry = ULONG(file_buf + OFFSET(file_f_dentry));
+        if (IS_KVADDR(dentry)) {
+            if (VALID_MEMBER(file_f_vfsmnt)) {
+                vfsmnt = ULONG(file_buf + OFFSET(file_f_vfsmnt));
+                get_pathname(dentry, buf, BUFSIZE, 1, vfsmnt);
+            } else
+                get_pathname(dentry, buf, BUFSIZE, 1, 0);
         }
 
         if (!strstr(buf, "zram")) continue;
@@ -329,8 +338,8 @@ void parser_zram_data_init(void) {
         readmem(bd_disk + PARSER_OFFSET(gendisk_private_data), KVADDR,
                 &zram_data_cache[i].zram, PARSER_SIZE(gendisk_private_data), "gendisk_private_data", FAULT_ON_ERROR);
 
-        free(swap_info_buf);
     }
+    free(swap_info_buf);
 }
 
 void parser_zram_data_uninit(void) {

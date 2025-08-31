@@ -7545,6 +7545,12 @@ struct zspage {
             unsigned int isolated : 5;
             unsigned int magic : 8;
         } v6_6;
+        struct {
+            unsigned int huge : 1;
+            unsigned int fullness : 4;
+            unsigned int class : 9;
+            unsigned int magic : 8;
+        } v6_12;
     };
     unsigned int inuse;
     unsigned int freeobj;
