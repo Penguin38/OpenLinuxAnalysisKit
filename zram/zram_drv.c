@@ -212,7 +212,7 @@ int parser_zram_read_page(int swap_index, ulong zram_offset, unsigned char* valu
     BZERO(entry_buf, PARSER_SIZE(zram_table_entry));
     readmem(entry, KVADDR, entry_buf, PARSER_SIZE(zram_table_entry), "zram_table_entry", error_handle);
     flags = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_flags));
-    handle = ULONG(entry_buf /*+ PARSER_OFFSET(zram_table_entry_handle)*/); // handle or entry
+    handle = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_handle)); // handle or entry
     element = ULONG(entry_buf + PARSER_OFFSET(zram_table_entry_element));
     free(entry_buf);
 
