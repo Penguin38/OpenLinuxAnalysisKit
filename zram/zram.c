@@ -205,9 +205,9 @@ void parser_zram_init(void) {
         } else {
             zram_flag_shift = 24;
         }
-        PARSER_ZRAM_FLAG_SHIFT = 1 << zram_flag_shift;
-        PARSER_ZRAM_FLAG_SAME_BIT = 1 << (parse_zram_pageflags("ZRAM_SAME", 1, zram_flag_shift));
-        PARSER_ZRAM_FLAG_WB_BIT = 1 << (parse_zram_pageflags("ZRAM_WB", 2, zram_flag_shift));
+        PARSER_ZRAM_FLAG_SHIFT = 1ULL << zram_flag_shift;
+        PARSER_ZRAM_FLAG_SAME_BIT = 1ULL << (parse_zram_pageflags("ZRAM_SAME", 1, zram_flag_shift));
+        PARSER_ZRAM_FLAG_WB_BIT = 1ULL << (parse_zram_pageflags("ZRAM_WB", 2, zram_flag_shift));
         PARSER_ZRAM_COMP_PRIORITY_BIT1 = parse_zram_pageflags("ZRAM_COMP_PRIORITY_BIT1", 7, zram_flag_shift);
         PARSER_ZRAM_COMP_PRIORITY_MASK = 0x3;
 
