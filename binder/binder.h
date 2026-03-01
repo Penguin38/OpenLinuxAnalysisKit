@@ -12,7 +12,11 @@ void parser_binder_usage(void);
 struct binder_data_t {
     struct task_context *tc;
     int pid;
+    int dump_info;
     int dump_all;
+    int dump_node;
+    ulong transaction;
+    ulong proc;
 };
 
 /**
@@ -79,10 +83,19 @@ struct binder_error {
     unsigned int cmd;
 };
 
+struct binder_ref_data {
+    int debug_id;
+    unsigned int desc;
+    int strong;
+    int weak;
+};
+
 void parser_binder_proc_show(struct binder_data_t* binder_data);
 void parser_binder_print_binder_proc(ulong proc);
 void parser_binder_print_binder_thread_ilocked(ulong thread);
 void parser_binder_print_binder_transaction_ilocked(ulong proc, const char* prefix, ulong transaction);
 void parser_binder_print_binder_work_ilocked(ulong proc, const char* prefix, const char* transaction_prefix, ulong work);
+void parser_binder_print_binder_node(ulong proc);
+void parser_binder_print_ref_node(ulong ref);
 
 #endif //  BINDER_BINDER_H_

@@ -196,6 +196,7 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(binder_proc_context, "binder_proc", "context");
     PARSER_MEMBER_OFFSET_INIT(binder_proc_threads, "binder_proc", "threads");
     PARSER_MEMBER_OFFSET_INIT(binder_proc_todo, "binder_proc", "todo");
+    PARSER_MEMBER_OFFSET_INIT(binder_proc_refs_by_desc, "binder_proc", "refs_by_desc");
     PARSER_MEMBER_OFFSET_INIT(binder_context_name, "binder_context", "name");
     PARSER_MEMBER_OFFSET_INIT(binder_thread_rb_node, "binder_thread", "rb_node");
     PARSER_MEMBER_OFFSET_INIT(binder_thread_pid, "binder_thread", "pid");
@@ -221,6 +222,11 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(binder_node_work, "binder_node", "work");
     PARSER_MEMBER_OFFSET_INIT(binder_node_ptr, "binder_node", "ptr");
     PARSER_MEMBER_OFFSET_INIT(binder_node_cookie, "binder_node", "cookie");
+    PARSER_MEMBER_OFFSET_INIT(binder_node_proc, "binder_node", "proc");
+    PARSER_MEMBER_OFFSET_INIT(binder_ref_data, "binder_ref", "data");
+    PARSER_MEMBER_OFFSET_INIT(binder_ref_rb_node_desc, "binder_ref", "rb_node_desc");
+    PARSER_MEMBER_OFFSET_INIT(binder_ref_node, "binder_ref", "node");
+    PARSER_MEMBER_OFFSET_INIT(binder_ref_death, "binder_ref", "death");
     PARSER_MEMBER_OFFSET_INIT(mem_section_page_ext, "mem_section", "page_ext");
     PARSER_MEMBER_OFFSET_INIT(page_ext_flags, "page_ext", "flags");
     PARSER_MEMBER_OFFSET_INIT(page_ext_operations_offset, "page_ext_operations", "offset");

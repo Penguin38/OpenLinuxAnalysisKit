@@ -10,22 +10,34 @@ void parser_binder_main(void) {
     int option_index = 0;
     optind = 0; // reset
     static struct option long_options[] = {
-        {"pid",    required_argument,  0, 'p'},
-        {"all",    no_argument,        0, 'a'},
-        {0,         0,                 0,  0 }
+        {"pid",         required_argument,  0, 'p'},
+        {"all",         no_argument,        0, 'a'},
+        {"transaction", required_argument,  0, 't'},
+        {"node",        required_argument,  0, 'n'},
+        {0,             0,                  0,  0 },
     };
 
     struct binder_data_t binder_data;
     memset(&binder_data, 0x0, sizeof(binder_data));
 
-    while ((opt = getopt_long(argcnt - 1, &args[1], "p:a",
+    while ((opt = getopt_long(argcnt - 1, &args[1], "p:at:n:",
                 long_options, &option_index)) != -1) {
         switch (opt) {
             case 'p':
                 if (args[optind]) binder_data.pid = atoi(args[optind]);
+                binder_data.dump_info = 1;
                 break;
             case 'a':
+                binder_data.dump_info = 1;
                 binder_data.dump_all = 1;
+                break;
+            case 't':
+                if (args[optind]) binder_data.transaction = htol(args[optind], FAULT_ON_ERROR, NULL);
+                break;
+            case 'n':
+                if (args[optind]) binder_data.proc = htol(args[optind], FAULT_ON_ERROR, NULL);
+                binder_data.dump_info = 0;
+                binder_data.dump_node = 1;
                 break;
         }
     }
@@ -38,7 +50,21 @@ void parser_binder_main(void) {
         }
     }
 
-    parser_binder_proc_show(&binder_data);
+    if (binder_data.dump_info) {
+        parser_binder_proc_show(&binder_data);
+    } else if (binder_data.dump_node) {
+        parser_binder_print_binder_node(binder_data.proc);
+    }
+
+/*
+    if (binder_data.dump_all || binder_data.pid) {
+        parser_binder_proc_show(&binder_data);
+    } else if (binder_data.transaction) {
+        // parser_binder_print_binder_transaction_ilocked();
+    } else if (binder_data.dump_node) {
+
+    }
+    */
 }
 
 void parser_binder_usage(void) {
@@ -318,5 +344,58 @@ void parser_binder_print_binder_work_ilocked(ulong proc, const char* prefix, con
         default:
             fprintf(fp, "%sunknown work: type %d\n", prefix, w.type);
             break;
+    }
+}
+
+void parser_binder_print_binder_node(ulong proc) {
+    ulong refs_ptr;
+    readmem(proc + PARSER_OFFSET(binder_proc_refs_by_desc), KVADDR,
+            &refs_ptr, sizeof(void *), "binder_refs", FAULT_ON_ERROR);
+    struct tree_data td;
+    ulong *list_ptr = NULL;
+    int i, cnt;
+    memset(&td, 0x0, sizeof(td));
+    td.flags |= TREE_NODE_POINTER;
+    td.start = refs_ptr;
+    td.node_member_offset = PARSER_OFFSET(binder_ref_rb_node_desc);
+    hq_open();
+    cnt = do_rbtree(&td);
+    if (cnt) {
+        list_ptr = (ulong *)malloc(cnt * sizeof(void *));
+        BZERO(list_ptr, cnt * sizeof(void *));
+        retrieve_list(list_ptr, cnt);
+
+        for (i = 0; i < cnt; ++i) {
+            if (!list_ptr[i]) continue;
+            ulong refs = list_ptr[i] - td.node_member_offset;
+            parser_binder_print_ref_node(refs);
+        }
+        free(list_ptr);
+    }
+    hq_close();
+}
+
+void parser_binder_print_ref_node(ulong ref) {
+    ulong node, proc, death;
+    int node_debug_id, pid = 0;
+    struct binder_ref_data ref_data;
+    readmem(ref + PARSER_OFFSET(binder_ref_node), KVADDR,
+            &node, sizeof(void *), "binder_node", FAULT_ON_ERROR);
+    readmem(ref + PARSER_OFFSET(binder_ref_death), KVADDR,
+            &death, sizeof(void *), "binder_ref_death", FAULT_ON_ERROR);
+    if (IS_KVADDR(node)) {
+        readmem(node + PARSER_OFFSET(binder_node_debug_id), KVADDR,
+                &node_debug_id, PARSER_SIZE(binder_node_debug_id), "binder_node_debug_id", FAULT_ON_ERROR);
+        readmem(node + PARSER_OFFSET(binder_node_proc), KVADDR,
+                &proc, sizeof(void *), "binder_proc", FAULT_ON_ERROR);
+        readmem(ref + PARSER_OFFSET(binder_ref_data), KVADDR,
+                &ref_data, sizeof(struct binder_ref_data), "binder_ref_data", FAULT_ON_ERROR);
+        if (IS_KVADDR(proc)) {
+            readmem(proc + PARSER_OFFSET(binder_proc_pid), KVADDR,
+                    &pid, PARSER_SIZE(binder_proc_pid), "binder_proc_pid", FAULT_ON_ERROR);
+        }
+        fprintf(fp, "ref[%016lx] %d: desc %d node[%016lx] %d s %d w %d d %016lx proc %d\n",
+                ref, ref_data.debug_id, ref_data.desc, node, node_debug_id,
+                ref_data.strong, ref_data.weak, death, pid);
     }
 }

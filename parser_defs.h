@@ -71,6 +71,7 @@ struct parser_offset_table {
     long binder_proc_context;
     long binder_proc_threads;
     long binder_proc_todo;
+    long binder_proc_refs_by_desc;
     long binder_context_name;
     long binder_thread_rb_node;
     long binder_thread_pid;
@@ -96,6 +97,11 @@ struct parser_offset_table {
     long binder_node_work;
     long binder_node_ptr;
     long binder_node_cookie;
+    long binder_node_proc;
+    long binder_ref_data;
+    long binder_ref_rb_node_desc;
+    long binder_ref_node;
+    long binder_ref_death;
     long page_owner_order;
     long page_owner_gfp_mask;
     long page_owner_handle;
