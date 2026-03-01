@@ -14,8 +14,16 @@ void parser_cmdline_form_context(struct task_context* tc) {
     int current_offset = 0;
     unsigned char* page_buf;
     bool parse_zram = true;
+    unsigned int flags = 0x0;
 
     set_context(tc->task, NO_PID, FALSE);
+
+    readmem(tc->task + PARSER_OFFSET(task_struct_flags), KVADDR,
+            &flags, sizeof(flags), "task_struct flags", FAULT_ON_ERROR);
+    if (flags & PF_KTHREAD) {
+        fprintf(fp, "PID: %-8ld %s\n", tc->pid, tc->comm);
+        return;
+    }
 
     tm = &task_mem_usage;
     get_task_mem_usage(tc->task, tm);
@@ -82,11 +90,26 @@ void parser_cmdline_form_context(struct task_context* tc) {
 
 }
 
+void dump_cmdline(bool dump_father, struct task_context *tc) {
+    ulong parent;
+    struct task_context *tmp = tc;
+    if (!dump_father)
+        parser_cmdline_form_context(tmp);
+    else {
+        do {
+            parser_cmdline_form_context(tmp);
+            readmem(tmp->task + OFFSET(task_struct_parent), KVADDR,
+                    &parent, sizeof(void *), "task_struct parent", FAULT_ON_ERROR);
+            tmp = task_to_context(parent);
+        } while (tmp->pid != 0);
+    }
+}
+
 void parser_cmdline_main(void) {
     struct task_context *tc = NULL;
     int pid = CURRENT_PID();
+    bool dump_father = false;
     bool dump_all = false;
-    ulong parent;
 
     int opt;
     int option_index = 0;
@@ -95,10 +118,11 @@ void parser_cmdline_main(void) {
         {"task",   required_argument,  0,'t'},
         {"pid",    required_argument,  0,'p'},
         {"father", no_argument,        0,'f'},
+        {"all",    no_argument,        0,'a'},
         {0,        0,                  0, 0 },
     };
 
-    while ((opt = getopt_long(argcnt - 1, &args[1], "t:p:f",
+    while ((opt = getopt_long(argcnt - 1, &args[1], "t:p:af",
                 long_options, &option_index)) != -1) {
         switch (opt) {
             case 'p':
@@ -108,12 +132,15 @@ void parser_cmdline_main(void) {
                 tc = task_to_context(htol(optarg, FAULT_ON_ERROR, NULL));
                 break;
             case 'f':
+                dump_father = true;
+                break;
+            case 'a':
                 dump_all = true;
                 break;
         }
     }
 
-    if (!tc) {
+    if (!tc && !dump_all) {
         tc = pid_to_context(pid);
         if (!tc) {
             fprintf(fp, "No such pid: %d\n", pid);
@@ -122,14 +149,15 @@ void parser_cmdline_main(void) {
     }
 
     if (!dump_all)
-        parser_cmdline_form_context(tc);
+        dump_cmdline(dump_father, tc);
     else {
-        do {
-            parser_cmdline_form_context(tc);
-            readmem(tc->task + OFFSET(task_struct_parent), KVADDR,
-                    &parent, sizeof(void *), "task_struct parent", FAULT_ON_ERROR);
-            tc = task_to_context(parent);
-        } while (tc->pid != 0);
+        int i, cur;
+        tc = FIRST_CONTEXT();
+        for (i = cur = 0; i < RUNNING_TASKS(); i++, tc++) {
+            if (tc->pid != task_tgid(tc->task))
+                continue;
+            dump_cmdline(dump_father, tc);
+        }
     }
 }
 
