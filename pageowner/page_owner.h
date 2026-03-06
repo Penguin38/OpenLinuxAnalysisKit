@@ -65,6 +65,17 @@ union handle_parts {
         unsigned int valid : 1;
         unsigned int extra : 5;
     } v6_1;
+    struct {
+        unsigned int pool_index : 16;
+        unsigned int offset : 10;
+        unsigned int valid : 1;
+        unsigned int extra : 5;
+    } v6_6;
+    struct {
+        unsigned int pool_index_plus_1 : 17;
+        unsigned int offset : 10;
+        unsigned int extra : 5;
+    } v6_12;
 };
 
 #endif //  PAGEOWNER_PAGE_OWNER_H_

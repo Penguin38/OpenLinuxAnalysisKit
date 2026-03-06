@@ -33,6 +33,8 @@ int parser_page_owner_data_init(struct pageowner_data_t* pageowner_data) {
 
     if (symbol_exists("pool_index"))
         readmem(symbol_value("pool_index"), KVADDR, &pageowner_data->depot_index, sizeof(int), "pool_index", FAULT_ON_ERROR);
+    if (symbol_exists("pools_num"))
+        readmem(symbol_value("pools_num"), KVADDR, &pageowner_data->depot_index, sizeof(int), "pools_num", FAULT_ON_ERROR);
     if (symbol_exists("stack_pools"))
         pageowner_data->stack_slabs = symbol_value("stack_pools");
 
@@ -163,17 +165,17 @@ void parser_page_owner_main(void) {
                     parser_page_owner_top_print(max_pages, max_pid);
                 }
             }
-            if (page_owner_data.top) free(page_owner_data.top);
         }
+        if (page_owner_data.top) free(page_owner_data.top);
     }
 }
 
 void parser_page_owner_usage(void) {
     fprintf(fp, "Usage: lp page_owner [OPTION] ...\n");
     fprintf(fp, "Option:\n");
-    fprintf(fp, "         --page   dump page alloc stack.\n");
-    fprintf(fp, "         --pid    cloc pid pages.\n");
-    fprintf(fp, "    -t, --top     cloc top pages.\n");
+    fprintf(fp, "         --page <PAGE>  dump page alloc stack.\n");
+    fprintf(fp, "         --pid <PID>    cloc pid pages.\n");
+    fprintf(fp, "    -t,  --top <N>      cloc top N processes pages.\n");
 }
 
 ulong parser_page_ext_get(struct pageowner_data_t* pageowner_data, ulong page, ulong pfn) {
@@ -302,9 +304,17 @@ unsigned int parser_stack_depot_fetch(struct pageowner_data_t* pageowner_data, i
     ulong slab;
     ulong offset;
     ulong slabindex;
+    ulong stack;
 
     union handle_parts parts = { .handle = handle };
-    if (THIS_KERNEL_VERSION >= LINUX(6,1,0)) {
+
+    if (THIS_KERNEL_VERSION >= LINUX(6,12,0)) {
+        offset = parts.v6_12.offset << STACK_ALLOC_ALIGN;
+        slabindex = parts.v6_12.pool_index_plus_1 - 1;
+    } else if (THIS_KERNEL_VERSION >= LINUX(6,6,0)) {
+        offset = parts.v6_6.offset << STACK_ALLOC_ALIGN;
+        slabindex = parts.v6_6.pool_index;
+    } else if (THIS_KERNEL_VERSION >= LINUX(6,1,0)) {
         offset = parts.v6_1.offset << STACK_ALLOC_ALIGN;
         slabindex = parts.v6_1.slabindex;
     } else {
@@ -313,13 +323,14 @@ unsigned int parser_stack_depot_fetch(struct pageowner_data_t* pageowner_data, i
     }
 
     *entries = 0x0;
-    if (!handle) return 0;
-    if (slabindex > depot_index) return 0;
+    if (!handle || !stack_slabs
+            || (slabindex > depot_index))
+        return 0;
 
     readmem(stack_slabs + slabindex * sizeof(void *), KVADDR, &slab, sizeof(ulong), "slab", FAULT_ON_ERROR);
     if (!slab) return 0;
 
-    ulong stack = slab + offset;
+    stack = slab + offset;
     *entries = stack + PARSER_OFFSET(stack_record_entries);
     readmem(stack + PARSER_OFFSET(stack_record_size), KVADDR,
             &sr_size, PARSER_SIZE(stack_record_size), "stack_record_size", FAULT_ON_ERROR);
