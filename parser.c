@@ -5,6 +5,7 @@
 #include "zram/zram.h"
 #include "shmem/shmem.h"
 #include "binder/binder.h"
+#include "dmabuf/dmabuf.h"
 #include "pageowner/page_owner.h"
 #include "trace/trace.h"
 #include "cpu/cpu.h"
@@ -61,7 +62,7 @@ struct parser_commands g_parser_commands[] = {
     {"binder", parser_binder_main, parser_binder_usage},
     {"meminfo", NULL, NULL},
     {"page_owner", parser_page_owner_main, parser_page_owner_usage},
-    {"dmabuf", NULL, NULL},
+    {"dmabuf", parser_dmabuf_main, parser_dmabuf_usage},
     {"trace", parser_trace_main, parser_trace_usage},
     {"cpu", parser_cpu_main, parser_cpu_usage},
     {"time", parser_time_main, parser_time_usage},
@@ -252,6 +253,20 @@ static void parser_offset_table_init(void) {
     PARSER_MEMBER_OFFSET_INIT(array_buffer_buffer, "array_buffer", "buffer");
     PARSER_MEMBER_OFFSET_INIT(trace_buffer_record_disabled, "trace_buffer", "record_disabled");
     PARSER_MEMBER_OFFSET_INIT(tracer_name, "tracer", "name");
+
+    // dmabuf
+    PARSER_MEMBER_OFFSET_INIT(task_struct_files, "task_struct", "files");
+    PARSER_MEMBER_OFFSET_INIT(files_struct_fdt, "files_struct", "fdt");
+    PARSER_MEMBER_OFFSET_INIT(fdtable_fd, "fdtable", "fd");
+    PARSER_MEMBER_OFFSET_INIT(fdtable_max_fds, "fdtable", "max_fds");
+    PARSER_MEMBER_OFFSET_INIT(file_f_op, "file", "f_op");
+    PARSER_MEMBER_OFFSET_INIT(file_private_data, "file", "private_data");
+    PARSER_MEMBER_OFFSET_INIT(dma_buf_size, "dma_buf", "size");
+    PARSER_MEMBER_OFFSET_INIT(dma_buf_name, "dma_buf", "name");
+    PARSER_MEMBER_OFFSET_INIT(dma_buf_exp_name, "dma_buf", "exp_name");
+    PARSER_MEMBER_OFFSET_INIT(dma_buf_attachments, "dma_buf", "attachments");
+    PARSER_MEMBER_OFFSET_INIT(dma_buf_file, "dma_buf", "file");
+    PARSER_MEMBER_OFFSET_INIT(dma_buf_list_node, "dma_buf", "list_node");
 }
 
 static void parser_size_table_init(void) {
@@ -358,6 +373,20 @@ static void parser_size_table_init(void) {
     PARSER_MEMBER_SIZE_INIT(array_buffer_buffer, "array_buffer", "buffer");
     PARSER_MEMBER_SIZE_INIT(trace_buffer_record_disabled, "trace_buffer", "record_disabled");
     PARSER_MEMBER_SIZE_INIT(tracer_name, "tracer", "name");
+
+    // dmabuf
+    PARSER_MEMBER_SIZE_INIT(task_struct_files, "task_struct", "files");
+    PARSER_MEMBER_SIZE_INIT(files_struct_fdt, "files_struct", "fdt");
+    PARSER_MEMBER_SIZE_INIT(fdtable_fd, "fdtable", "fd");
+    PARSER_MEMBER_SIZE_INIT(fdtable_max_fds, "fdtable", "max_fds");
+    PARSER_MEMBER_SIZE_INIT(file_f_op, "file", "f_op");
+    PARSER_MEMBER_SIZE_INIT(file_private_data, "file", "private_data");
+    PARSER_MEMBER_SIZE_INIT(dma_buf_size, "dma_buf", "size");
+    PARSER_MEMBER_SIZE_INIT(dma_buf_name, "dma_buf", "name");
+    PARSER_MEMBER_SIZE_INIT(dma_buf_exp_name, "dma_buf", "exp_name");
+    PARSER_MEMBER_SIZE_INIT(dma_buf_attachments, "dma_buf", "attachments");
+    PARSER_MEMBER_SIZE_INIT(dma_buf_file, "dma_buf", "file");
+    PARSER_MEMBER_SIZE_INIT(dma_buf_list_node, "dma_buf", "list_node");
 }
 
 uint64_t align_down(uint64_t x, uint64_t n) {

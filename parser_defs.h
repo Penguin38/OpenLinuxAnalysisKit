@@ -128,6 +128,20 @@ struct parser_offset_table {
     long trace_buffer_record_disabled;
     long tracer_name;
 
+    // dmabuf
+    long task_struct_files;
+    long files_struct_fdt;
+    long fdtable_fd;
+    long fdtable_max_fds;
+    long file_f_op;
+    long file_private_data;
+    long dma_buf_size;
+    long dma_buf_name;
+    long dma_buf_exp_name;
+    long dma_buf_attachments;
+    long dma_buf_file;
+    long dma_buf_list_node;
+
     // zram
     long zram_disksize;
     long zram_compressor;
@@ -249,6 +263,20 @@ struct parser_size_table {
     long array_buffer_buffer;
     long trace_buffer_record_disabled;
     long tracer_name;
+
+    // dmabuf
+    long task_struct_files;
+    long files_struct_fdt;
+    long fdtable_fd;
+    long fdtable_max_fds;
+    long file_f_op;
+    long file_private_data;
+    long dma_buf_size;
+    long dma_buf_name;
+    long dma_buf_exp_name;
+    long dma_buf_attachments;
+    long dma_buf_file;
+    long dma_buf_list_node;
 
     // zram
     long zram;
