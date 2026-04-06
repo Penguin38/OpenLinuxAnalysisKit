@@ -194,7 +194,7 @@ void parser_zram_init(void) {
 
         // check zram.ko ready
         if (!PARSER_VALID_MEMBER(zram_disksize)) {
-            error(FATAL, "Please run mod -s zram.\n");
+            error(FATAL, "Please run mod -s zram <zram.ko>.\n");
         }
 
         long zram_flag_shift;
@@ -251,7 +251,7 @@ void parser_zram_init(void) {
 
         // check zsmalloc.ko ready
         if (!PARSER_VALID_MEMBER(zspool_size_class)) {
-            error(FATAL, "Please run mod -s zsmalloc.\n");
+            error(FATAL, "Please run mod -s zsmalloc <zsmalloc.ko>.\n");
         }
         zsmalloc_ready = 1;
     }
